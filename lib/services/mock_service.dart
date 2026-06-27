@@ -44,20 +44,12 @@ class MockService extends ChangeNotifier {
   ];
 
   final List<ArenaModel> _arenas = [
-    const ArenaModel(
     ArenaModel(
       id: 'arena-1',
       ownerId: 'profile-owner',
       name: 'Arena Beira Mar',
       city: 'Fortaleza',
       uf: 'CE',
-      isLive: true,
-      replayCount: 28,
-      status: ArenaStatus.active,
-      courts: [
-        CourtModel(id: 'court-1', name: 'Quadra 1', isLive: true),
-        CourtModel(id: 'court-2', name: 'Quadra 2', isLive: false),
-        CourtModel(id: 'court-3', name: 'Quadra 3', isLive: false),
       status: ArenaStatus.active,
       isLive: true,
       replayCount: 28,
@@ -294,14 +286,17 @@ class MockService extends ChangeNotifier {
     int replayCount = 0,
     ArenaStatus status = ArenaStatus.active,
   }) {
+    final now = DateTime.now();
     final arena = ArenaModel(
-      id: 'arena-${DateTime.now().microsecondsSinceEpoch}',
+      id: 'arena-${now.microsecondsSinceEpoch}',
       name: name.trim(),
       city: city.trim(),
       uf: uf.trim().toUpperCase(),
       isLive: isLive,
       replayCount: replayCount,
       status: status,
+      createdAt: now,
+      updatedAt: now,
     );
     _arenas.add(arena);
     notifyListeners();
@@ -334,14 +329,6 @@ class MockService extends ChangeNotifier {
     _arenas.removeWhere((arena) => arena.id == id);
     notifyListeners();
   }
-
-  List<ReplayModel> replaysForArena(String arenaId) {
-    return _arenas
-        .firstWhere((arena) => arena.id == arenaId)
-        .replays;
-  }
-
-  List<CameraModel> get cameras => _cameras;
 
   List<CityModel> get cities => List.unmodifiable(_cities);
 

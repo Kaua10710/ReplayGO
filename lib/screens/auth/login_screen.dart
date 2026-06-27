@@ -8,6 +8,7 @@ import '../../models/profile_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/role_selector.dart';
+import '../splash/splash_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {

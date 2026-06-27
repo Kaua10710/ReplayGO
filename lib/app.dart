@@ -67,7 +67,6 @@ class _ReplayGoAppState extends State<ReplayGoApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MockService>.value(value: _appRouter.service),
-        Provider<MockService>.value(value: _appRouter.service),
         Provider<AuthService>.value(value: _authService),
       ],
       child: MaterialApp.router(

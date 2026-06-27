@@ -6,7 +6,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/responsive.dart';
 import '../../models/arena_model.dart';
 import '../../models/city_model.dart';
-import '../../models/user_model.dart';
 import '../../models/profile_model.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/arena_carousel_card.dart';

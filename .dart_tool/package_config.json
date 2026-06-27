@@ -3,25 +3,25 @@
   "packages": [
     {
       "name": "app_links",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/app_links-7.2.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.12"
     },
     {
       "name": "app_links_linux",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/app_links_linux-1.0.3",
+
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "app_links_platform_interface",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/app_links_platform_interface-2.0.3",
+
       "packageUri": "lib/",
       "languageVersion": "3.12"
     },
     {
       "name": "app_links_web",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/app_links_web-1.0.4",
+
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -75,7 +75,7 @@
     },
     {
       "name": "convert",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/convert-3.1.2",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -99,7 +99,7 @@
     },
     {
       "name": "dart_jsonwebtoken",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/dart_jsonwebtoken-3.4.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -111,13 +111,13 @@
     },
     {
       "name": "device_info_plus",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/device_info_plus-13.2.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
     {
       "name": "device_info_plus_platform_interface",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/device_info_plus_platform_interface-8.1.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -195,7 +195,7 @@
     },
     {
       "name": "functions_client",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/functions_client-2.6.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -213,13 +213,13 @@
     },
     {
       "name": "gotrue",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/gotrue-2.22.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "gtk",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/gtk-2.2.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -261,13 +261,13 @@
     },
     {
       "name": "json_annotation",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/json_annotation-4.12.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
     {
       "name": "jwt_decode",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/jwt_decode-0.3.1",
+
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -357,43 +357,43 @@
     },
     {
       "name": "passkeys",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys-2.20.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "passkeys_android",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys_android-2.12.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "passkeys_darwin",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys_darwin-0.4.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "passkeys_doctor",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys_doctor-1.4.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "passkeys_platform_interface",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys_platform_interface-2.6.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "passkeys_web",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys_web-2.9.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "passkeys_windows",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/passkeys_windows-0.1.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -465,13 +465,13 @@
     },
     {
       "name": "pointycastle",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/pointycastle-4.0.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "postgrest",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/postgrest-2.7.2",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -489,7 +489,7 @@
     },
     {
       "name": "realtime_client",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/realtime_client-2.8.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -501,13 +501,13 @@
     },
     {
       "name": "retry",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/retry-3.1.2",
+
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "rxdart",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/rxdart-0.28.0",
+
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -573,7 +573,7 @@
     },
     {
       "name": "storage_client",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/storage_client-2.5.7",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -591,13 +591,13 @@
     },
     {
       "name": "supabase",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/supabase-2.13.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "supabase_flutter",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/supabase_flutter-2.15.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -621,55 +621,55 @@
     },
     {
       "name": "ua_client_hints",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/ua_client_hints-1.7.0",
+
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
     {
       "name": "url_launcher",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher-6.3.2",
+
       "packageUri": "lib/",
       "languageVersion": "3.6"
     },
     {
       "name": "url_launcher_android",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_android-6.3.32",
+
       "packageUri": "lib/",
       "languageVersion": "3.12"
     },
     {
       "name": "url_launcher_ios",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_ios-6.4.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
     {
       "name": "url_launcher_linux",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_linux-3.2.2",
+
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
     {
       "name": "url_launcher_macos",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_macos-3.2.5",
+
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
     {
       "name": "url_launcher_platform_interface",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_platform_interface-2.3.2",
+
       "packageUri": "lib/",
       "languageVersion": "3.1"
     },
     {
       "name": "url_launcher_web",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_web-2.4.3",
+
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
     {
       "name": "url_launcher_windows",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_windows-3.1.5",
+
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -759,13 +759,13 @@
     },
     {
       "name": "web_socket",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/web_socket-1.0.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "web_socket_channel",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/web_socket_channel-3.0.3",
+
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -777,7 +777,7 @@
     },
     {
       "name": "win32_registry",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/win32_registry-3.0.3",
+
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -801,7 +801,7 @@
     },
     {
       "name": "yet_another_json_isolate",
-      "rootUri": "file:///C:/Users/luizk/AppData/Local/Pub/Cache/hosted/pub.dev/yet_another_json_isolate-2.1.1",
+
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
