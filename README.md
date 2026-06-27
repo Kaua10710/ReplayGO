@@ -70,7 +70,39 @@ Definidos em `lib/services/mock_service.dart` com:
 
 `MockService` fornece métodos de acesso usados pelas telas via `Provider`.
 
-## 🚀 Como Rodar
+## � Andamento do MVP
+- ✅ Navegação GoRouter configurada com 8 telas interligadas.
+- ✅ Tema, tipografia, cores e componentes compartilhados padronizados.
+- ✅ Dados mock consolidados no `MockService` para cada papel (usuário, proprietário, admin).
+- ⚠️ Players de vídeo ainda são placeholders (dependências já no `pubspec`).
+- ⚠️ Integrações externas (Supabase/Dio/shared_preferences) aguardando backend.
+- ⚠️ Ações de botões (salvar, compartilhar, suspender arena, etc.) ainda não conectadas.
+
+## 🧪 Fluxo de Testes Locais
+1. Garanta que o Flutter SDK está atualizado (`flutter --version`).
+2. Rode os testes padrões do Flutter:
+   ```bash
+   flutter test
+   ```
+3. Faça um dry-run para detectar lints obrigatórios:
+   ```bash
+   flutter analyze
+   ```
+4. Execute o app:
+   ```bash
+   flutter run -d chrome   # ou selecione outro dispositivo disponível
+   ```
+5. Use as credenciais mockadas nos fluxos de login/registro para navegar pelos papéis.
+
+## 🧭 Organização de Branches e Git
+- `main`: branch estável com o MVP navegável (use para releases e demonstrações).
+- `Kaua`: branch de trabalho antigo. Prefira continuar em `main` ou crie feature branches (`feature/nome-feature`).
+- Antes de commitar: `git status` (checar arquivos) → `git diff` (validar alterações) → `flutter analyze`.
+- Mensagens de commit: siga o formato `tipo: resumo curto` (ex.: `docs: atualiza README com andamento do projeto`).
+
+> Dica: se precisar limpar o cache entre builds, execute `flutter clean` seguido de `flutter pub get`.
+
+## �🚀 Como Rodar
 1. **Pré-requisitos:** Flutter SDK instalado e no PATH (`flutter --version` deve funcionar).
 2. Instale as dependências:
    ```bash
