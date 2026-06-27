@@ -25,7 +25,7 @@ class _ReplayGoAppState extends State<ReplayGoApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<MockService>.value(value: _appRouter.service),
+        ChangeNotifierProvider<MockService>.value(value: _appRouter.service),
       ],
       child: MaterialApp.router(
         title: 'ReplayGO',
