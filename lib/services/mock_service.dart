@@ -32,7 +32,7 @@ class MockService {
     ),
   ];
 
-  final List<ArenaModel> _arenas = [
+  final List<ArenaModel> _arenas = const [
     ArenaModel(
       id: 'arena-1',
       name: 'Arena Beira Mar',

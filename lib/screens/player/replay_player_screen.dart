@@ -27,7 +27,7 @@ class ReplayPlayerScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final args = routeData is ReplayPlayerArguments
         ? routeData as ReplayPlayerArguments
-        : ReplayPlayerArguments(
+        : const ReplayPlayerArguments(
             arenaName: 'Arena Beira Mar · Quadra 1',
             replay: const ReplayModel(
               title: 'Ponto decisivo',
@@ -107,9 +107,9 @@ class ReplayPlayerScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
                 children: [
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.replay_10, color: Colors.white70, size: 36),
                       SizedBox(width: 24),
                       CircleAvatar(
