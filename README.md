@@ -1,6 +1,6 @@
 # ReplayGO — MVP Frontend (Flutter)
 
-ReplayGO é um aplicativo mobile voltado para replays instantâneos em quadras de areia. Este repositório contém a estrutura do MVP (Fase 1), incluindo temas, rotas, dados mockados e 8 telas conectadas via GoRouter.
+ReplayGO é um aplicativo mobile voltado para replays instantâneos em quadras de areia. Este repositório contém a estrutura do MVP (Fase 1), incluindo tema, rotas, dados mockados, fluxo de autenticação com Supabase e navegação entre papéis (cliente, proprietário, admin) via GoRouter.
 
 ## 📱 Visão Geral
 - **Framework:** Flutter (Material)
@@ -37,7 +37,7 @@ lib/
 ├── models/                  # User, Arena, Court, Replay, Camera
 ├── services/
 │   └── mock_service.dart    # Dados mockados do MVP
-├── screens/                 # 8 telas do MVP
+├── screens/                 # 9 telas do MVP (inclui fluxo de registro)
 └── widgets/                 # Componentes reutilizáveis
 ```
 
@@ -45,13 +45,14 @@ lib/
 Todas usam conteúdo mockado e placeholders para vídeos.
 
 1. **Splash (`/`)** — Tema escuro com gradiente, botões de entrada e auto navegação para login.
-2. **Login (`/login`)** — Fundo claro, seletor de papel (usuário, proprietário, admin) e navegação condicional.
-3. **Home Shell (`/home`)** — Bottom nav com abas Home/Buscar/Replays/Perfil. Conteúdo para usuário final.
-4. **Arena Pública (`/arena`)** — Player placeholder, seleção de quadra, grade de replays 2xN.
-5. **Replay Player (`/replay`)** — Tela dark com controles e botões de salvar.
-6. **Perfil (`/profile`)** — Estatísticas, cards de replays e histórico de atividade.
-7. **Owner Dashboard (`/owner`)** — Cartão de streaming, métricas e lista de replays recentes.
-8. **Admin Panel (`/admin`)** — Estatísticas gerais, busca e lista de arenas com bottom sheet de ações.
+2. **Login (`/login`)** — Autenticação via Supabase, identifica o papel salvo no perfil e direciona para a área correta.
+3. **Registro (`/register`)** — Formulário público para criar contas de cliente, com envio de metadados e upsert em `profiles`.
+4. **Home Shell (`/home`)** — Bottom nav com abas Home/Buscar/Replays/Perfil. Conteúdo para usuário final.
+5. **Arena Pública (`/arena`)** — Player placeholder, seleção de quadra, grade de replays 2xN.
+6. **Replay Player (`/replay`)** — Tela dark com controles e botões de salvar.
+7. **Perfil (`/profile`)** — Estatísticas, cards de replays e histórico de atividade.
+8. **Owner Dashboard (`/owner`)** — Cartão de streaming, métricas e lista de replays recentes.
+9. **Admin Panel (`/admin`)** — Estatísticas gerais, busca, gerenciamento de arenas e criação de proprietários.
 
 ## 🧩 Widgets Compartilhados
 - `ReplayGoBottomNavBar`
@@ -70,7 +71,20 @@ Definidos em `lib/services/mock_service.dart` com:
 
 `MockService` fornece métodos de acesso usados pelas telas via `Provider`.
 
-## � Andamento do MVP
+## 🔐 Autenticação & Perfis (Supabase)
+- Implementado com `supabase_flutter`.
+- `AuthService` centraliza `signUpClient`, `signUpOwner`, login, logout e leitura de papel.
+- Registro no app sempre cria perfis `user` e realiza `upsert` na tabela `profiles`.
+- Proprietários devem ser convidados via painel admin (aba **Contas**), que usa `signUpOwner` e lista os existentes.
+- Ajuste as políticas RLS no Supabase para permitir `INSERT/SELECT` em `profiles` para `auth.uid()` e usuários admin.
+- `MockService` permanece disponível para cenários offline e dados fictícios.
+
+### 🔧 Configuração rápida do Supabase
+1. Defina `url` e `anonKey` em `lib/main.dart` com os valores do seu projeto.
+2. Execute `flutter pub get`.
+3. Rode o app (`flutter run`) e valide o fluxo de registro/login.
+
+## 🚧 Andamento do MVP
 - ✅ Navegação GoRouter configurada com 8 telas interligadas.
 - ✅ Tema, tipografia, cores e componentes compartilhados padronizados.
 - ✅ Dados mock consolidados no `MockService` para cada papel (usuário, proprietário, admin).
@@ -92,12 +106,13 @@ Definidos em `lib/services/mock_service.dart` com:
    ```bash
    flutter run -d chrome   # ou selecione outro dispositivo disponível
    ```
-5. Use as credenciais mockadas nos fluxos de login/registro para navegar pelos papéis.
+5. Use credenciais mockadas ou crie usuários reais (cliente pelo `/register`, proprietário via painel admin) para navegar pelos papéis.
 
 ## 🧭 Organização de Branches e Git
 - `main`: branch estável com o MVP navegável (use para releases e demonstrações).
 - `Kaua`: branch de trabalho antigo. Prefira continuar em `main` ou crie feature branches (`feature/nome-feature`).
 - Antes de commitar: `git status` (checar arquivos) → `git diff` (validar alterações) → `flutter analyze`.
+- Artefatos gerados (`.dart_tool/`, `.flutter-plugins`, `.flutter-plugins-dependencies`) estão ignorados; rode `flutter pub get` após clonar ou trocar de branch.
 - Mensagens de commit: siga o formato `tipo: resumo curto` (ex.: `docs: atualiza README com andamento do projeto`).
 
 > Dica: se precisar limpar o cache entre builds, execute `flutter clean` seguido de `flutter pub get`.
