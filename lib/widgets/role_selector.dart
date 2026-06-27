@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
-import '../models/user_model.dart';
+import '../models/profile_model.dart';
 
 class RoleSelector extends StatelessWidget {
   const RoleSelector({

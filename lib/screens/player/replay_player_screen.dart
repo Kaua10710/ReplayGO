@@ -27,14 +27,22 @@ class ReplayPlayerScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final args = routeData is ReplayPlayerArguments
         ? routeData as ReplayPlayerArguments
-        : const ReplayPlayerArguments(
+        : ReplayPlayerArguments(
             arenaName: 'Arena Beira Mar · Quadra 1',
-            replay: const ReplayModel(
+            replay: ReplayModel(
+              id: 'replay-1',
+              arenaId: 'arena-1',
+              courtId: 'court-1',
+              ownerId: 'profile-owner',
               title: 'Ponto decisivo',
-              courtName: 'Quadra 1',
-              duration: '0:42',
-              timeAgo: 'há 12 min',
+              description: 'Match point que garantiu a vitória.',
+              durationSeconds: 42,
+              recordedAt: DateTime.now().subtract(const Duration(minutes: 12)),
               visibility: ReplayVisibility.public,
+              createdAt: DateTime.now().subtract(const Duration(minutes: 11)),
+              updatedAt: DateTime.now().subtract(const Duration(minutes: 10)),
+              courtName: 'Quadra 1',
+              arenaName: 'Arena Beira Mar',
             ),
           );
 
@@ -64,7 +72,7 @@ class ReplayPlayerScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${args.replay.title} · 14:32',
+                          '${args.replay.title} · ${args.replay.durationLabel}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,

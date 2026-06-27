@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../models/user_model.dart';
+import '../../models/profile_model.dart';
+import '../../services/auth_service.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/role_selector.dart';
-import '../home/home_screen.dart';
-import '../owner/owner_dashboard_screen.dart';
-import '../admin/admin_panel_screen.dart';
-import '../splash/splash_screen.dart';
-import '../profile/profile_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -28,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   UserRole _selectedRole = UserRole.user;
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -36,17 +35,48 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    switch (_selectedRole) {
+  @override
+  void initState() {
+    super.initState();
+    _prefillCredentials(_selectedRole);
+  }
+
+  void _prefillCredentials(UserRole role) {
+    switch (role) {
       case UserRole.user:
-        context.go(HomeShell.routePath);
+        _emailController.text = 'lucas@replaygo.com';
         break;
       case UserRole.owner:
-        context.go(OwnerDashboardScreen.routePath);
+        _emailController.text = 'arena@replaygo.com';
         break;
       case UserRole.admin:
-        context.go(AdminPanelScreen.routePath);
+        _emailController.text = 'admin@replaygo.com';
         break;
+    }
+    _passwordController.text = 'Test@1234';
+  }
+
+  Future<void> _handleLogin() async {
+    final authService = context.read<AuthService>();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await authService.signIn(email: email, password: password);
+      // Navegação acontece via listener em app.dart
+    } on AuthException catch (error) {
+      setState(() => _error = error.message);
+    } catch (error) {
+      setState(() => _error = 'Não foi possível entrar. Tente novamente.');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -54,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final service = context.read<MockService>();
-    final user = service.getUser(_selectedRole);
+    final profile = service.getProfile(_selectedRole);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -109,7 +139,12 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               RoleSelector(
                 selectedRole: _selectedRole,
-                onChanged: (role) => setState(() => _selectedRole = role),
+                onChanged: (UserRole role) {
+                  setState(() {
+                    _selectedRole = role;
+                    _prefillCredentials(role);
+                  });
+                },
               ),
               const SizedBox(height: 24),
               TextField(
@@ -165,10 +200,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary),
+                ),
+              ],
               const SizedBox(height: 8),
               ElevatedButton(
-                onPressed: _handleLogin,
-                child: Text('Entrar como ${user.name.split(' ').first}'),
+                onPressed: _isLoading ? null : _handleLogin,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text('Entrar como ${profile.name.split(' ').first}'),
               ),
               const SizedBox(height: 16),
               Center(
