@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../models/user_model.dart';
+import '../../models/profile_model.dart';
+import '../../models/replay_model.dart';
+import '../../models/saved_replay_model.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/stats_card.dart';
@@ -21,7 +23,12 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final service = context.watch<MockService>();
-    final user = service.getUser(UserRole.user);
+    final user = service.getProfile(UserRole.user);
+    final savedReplays = service.savedReplaysForUser(user.id);
+    final savedReplayItems = savedReplays
+        .map((saved) => service.getReplayById(saved.replayId))
+        .whereType<ReplayModel>()
+        .toList();
 
     final content = SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -42,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '@${user.username.replaceAll('@', '')} · ${user.sport}',
+                      '@${user.email.split('@').first} · ${user.sport ?? 'Sem esporte definido'}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: AppColors.mutedGray,
                       ),
@@ -103,35 +110,38 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Lucas Carvalho',
+            user.name,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 24),
           Row(
-            children: const [
+            children: [
+              Expanded(
+                child: StatsCard(
+                  icon: Icons.bookmark_outline,
+                  value: savedReplayItems.length.toString(),
+                  label: 'Salvos',
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: StatsCard(
                   icon: Icons.play_circle_outline,
-                  value: '42',
-                  label: 'Replays',
+                  value: service.arenas
+                      .map((arena) => arena.replays.length)
+                      .fold<int>(0, (total, count) => total + count)
+                      .toString(),
+                  label: 'Replays arena',
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: StatsCard(
-                  icon: Icons.place_outlined,
-                  value: '8',
-                  label: 'Quadras',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatsCard(
-                  icon: Icons.ios_share,
-                  value: '17',
-                  label: 'Compart.',
+                  icon: Icons.notifications_active_outlined,
+                  value: user.notifications.toString(),
+                  label: 'Alertas',
                 ),
               ),
             ],
@@ -155,82 +165,92 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
           SizedBox(
             height: 180,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: 3,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x11000000),
-                        blurRadius: 12,
-                        offset: Offset(0, 8),
+            child: savedReplayItems.isEmpty
+                ? Center(
+                    child: Text(
+                      'Você ainda não salvou replays.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.mutedGray,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [AppColors.backgroundDark, AppColors.primary],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
+                    ),
+                  )
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: savedReplayItems.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final replay = savedReplayItems[index];
+                      return Container(
+                        width: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x11000000),
+                              blurRadius: 12,
+                              offset: Offset(0, 8),
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.play_circle_fill,
-                                size: 48,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+                          ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Arena Beira Mar',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [AppColors.backgroundDark, AppColors.primary],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.play_circle_fill,
+                                      size: 48,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '12 Jun 2024',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.mutedGray,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                onPressed: () {},
-                                icon: const Icon(Icons.delete_outline, color: AppColors.secondary),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    replay.title,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    replay.timeAgoLabel,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppColors.mutedGray,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: IconButton(
+                                      onPressed: () {},
+                                      icon: const Icon(Icons.delete_outline, color: AppColors.secondary),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const SizedBox(height: 32),
           Text(

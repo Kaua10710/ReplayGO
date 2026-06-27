@@ -7,6 +7,7 @@ import '../../core/responsive.dart';
 import '../../models/arena_model.dart';
 import '../../models/city_model.dart';
 import '../../models/user_model.dart';
+import '../../models/profile_model.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/arena_carousel_card.dart';
 import '../../widgets/arena_list_tile.dart';
@@ -58,7 +59,7 @@ class _HomeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final service = context.watch<MockService>();
-    final user = service.getUser(UserRole.user);
+    final user = service.getProfile(UserRole.user);
     final arenas = service.arenas;
     final featured = arenas.firstWhere((arena) => arena.isLive, orElse: () => arenas.first);
 
@@ -456,7 +457,7 @@ class _ReplaysTab extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${replay.courtName} · ${replay.timeAgo}',
+                          '${replay.courtName ?? 'Quadra'} · ${replay.timeAgoLabel}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.mutedGray,
                           ),

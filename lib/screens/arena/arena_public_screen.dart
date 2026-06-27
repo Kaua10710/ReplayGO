@@ -48,8 +48,15 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
         : ArenaPublicArguments(arenaId: service.arenas.first.id);
     _arena = service.getArenaById(args.arenaId);
     _courts = _arena.courts.isEmpty
-        ? const [
-            CourtModel(id: 'default', name: 'Quadra 1', isLive: true),
+        ? [
+            CourtModel(
+              id: 'default',
+              arenaId: _arena.id,
+              name: 'Quadra 1',
+              isLive: true,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
           ]
         : _arena.courts;
     _replays = _arena.replays;
