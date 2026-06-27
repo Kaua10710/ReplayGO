@@ -6,7 +6,6 @@ import '../../core/constants/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/mock_service.dart';
-import '../../widgets/role_selector.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -23,14 +22,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController(text: 'Test@1234');
-  UserRole _selectedRole = UserRole.user;
   bool _isLoading = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _prefillFields(_selectedRole);
+    _prefillFields();
   }
 
   @override
@@ -41,8 +39,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _prefillFields(UserRole role) {
-    final mockProfile = context.read<MockService>().getProfile(role);
+  void _prefillFields() {
+    final mockProfile = context.read<MockService>().getProfile(UserRole.user);
     _nameController.text = mockProfile.name;
     _emailController.text = mockProfile.email;
   }
@@ -63,11 +61,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await authService.signUp(
+      await authService.signUpClient(
         email: email,
         password: password,
         name: name,
-        role: _selectedRole,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -116,15 +113,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   color: AppColors.mutedGray,
                 ),
               ),
-              const SizedBox(height: 24),
-              RoleSelector(
-                selectedRole: _selectedRole,
-                onChanged: (UserRole role) {
-                  setState(() {
-                    _selectedRole = role;
-                    _prefillFields(role);
-                  });
-                },
+              const SizedBox(height: 8),
+              Text(
+                'Contas de estabelecimento e administradores são criadas via painel interno.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.secondary,
+                ),
               ),
               const SizedBox(height: 24),
               TextFormField(

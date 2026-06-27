@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/responsive.dart';
 import '../../models/arena_model.dart';
 import '../../models/city_model.dart';
+import '../../models/profile_model.dart';
+import '../../services/auth_service.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/arena_list_tile.dart';
 
@@ -17,6 +20,283 @@ class AdminPanelScreen extends StatefulWidget {
 
   @override
   State<AdminPanelScreen> createState() => _AdminPanelScreenState();
+}
+
+// =============================================================================
+// Contas
+// =============================================================================
+class _ManageAccountsView extends StatefulWidget {
+  const _ManageAccountsView();
+
+  @override
+  State<_ManageAccountsView> createState() => _ManageAccountsViewState();
+}
+
+class _ManageAccountsViewState extends State<_ManageAccountsView> {
+  final _formKey = GlobalKey<FormState>();
+  final _ownerNameController = TextEditingController();
+  final _ownerEmailController = TextEditingController();
+  final _ownerPasswordController = TextEditingController(text: 'Owner@1234');
+  bool _isSubmitting = false;
+  String? _error;
+  List<ProfileModel> _owners = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwners();
+  }
+
+  @override
+  void dispose() {
+    _ownerNameController.dispose();
+    _ownerEmailController.dispose();
+    _ownerPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadOwners() async {
+    final authService = context.read<AuthService>();
+    try {
+      final owners = await authService.fetchProfilesByRole(UserRole.owner);
+      if (mounted) {
+        setState(() => _owners = owners);
+      }
+    } catch (_) {
+      // Silencia erros para não quebrar a tela; administração pode estar offline.
+    }
+  }
+
+  Future<void> _handleCreateOwner() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final authService = context.read<AuthService>();
+    final name = _ownerNameController.text.trim();
+    final email = _ownerEmailController.text.trim();
+    final password = _ownerPasswordController.text;
+
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+
+    try {
+      await authService.signUpOwner(
+        email: email,
+        password: password,
+        name: name,
+      );
+      if (!mounted) return;
+
+      _ownerNameController.clear();
+      _ownerEmailController.clear();
+      _ownerPasswordController.text = 'Owner@1234';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Convite enviado para $email. Oriente o proprietário a verificar o email.'),
+        ),
+      );
+
+      await _loadOwners();
+    } on AuthException catch (error) {
+      setState(() => _error = error.message);
+    } catch (_) {
+      setState(() => _error = 'Não foi possível criar a conta. Verifique os dados e tente novamente.');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Criar acesso de estabelecimento',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Utilize este formulário para convidar novas arenas. Um email será enviado com instruções de acesso.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.mutedGray),
+          ),
+          const SizedBox(height: 24),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _ownerNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da arena / responsável',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe o nome do estabelecimento.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _ownerEmailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email de contato',
+                    prefixIcon: Icon(Icons.mail_outline),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe o email do responsável.';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Email inválido.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _ownerPasswordController,
+                  decoration: InputDecoration(
+                    labelText: 'Senha inicial',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _ownerPasswordController.text));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Senha copiada para a área de transferência.')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_outlined),
+                    ),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.length < 6) {
+                      return 'Informe uma senha com pelo menos 6 caracteres.';
+                    }
+                    return null;
+                  },
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isSubmitting ? null : _handleCreateOwner,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.person_add_alt_1_outlined),
+                    label: Text(_isSubmitting ? 'Enviando convite...' : 'Criar acesso de proprietário'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Proprietários ativos',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          if (_owners.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x11000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Text(
+                'Nenhum proprietário cadastrado ainda.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.mutedGray),
+              ),
+            )
+          else
+            Column(
+              children: _owners
+                  .map(
+                    (owner) => Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x11000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                            foregroundColor: AppColors.primary,
+                            child: Text(owner.name.isNotEmpty ? owner.name[0].toUpperCase() : 'P'),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  owner.name,
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                Text(
+                                  owner.email,
+                                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.mutedGray),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            owner.createdAt.toLocal().toIso8601String().substring(0, 10),
+                            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.mutedGray),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _AdminSection {
@@ -31,6 +311,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
   static const _sections = <_AdminSection>[
     _AdminSection('Painel Geral', Icons.dashboard_outlined, _GeneralPanelView()),
+    _AdminSection('Contas', Icons.person_add_alt_1_outlined, _ManageAccountsView()),
     _AdminSection('Cadastrar Cidades', Icons.add_location_alt_outlined, _RegisterCityView()),
     _AdminSection('Cadastrar Arenas', Icons.add_business_outlined, _RegisterArenaView()),
     _AdminSection('Configurações', Icons.settings_outlined, _SettingsView()),
