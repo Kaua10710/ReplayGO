@@ -44,14 +44,20 @@ class ArenaModel {
   }) {
     return ArenaModel(
       id: id,
+      ownerId: ownerId,
       name: name ?? this.name,
       city: city ?? this.city,
       uf: uf ?? this.uf,
       isLive: isLive ?? this.isLive,
       replayCount: replayCount ?? this.replayCount,
       status: status ?? this.status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       courts: courts ?? this.courts,
       replays: replays ?? this.replays,
+    );
+  }
+
   factory ArenaModel.fromJson(Map<String, dynamic> json) {
     return ArenaModel(
       id: json['id'] as String,
