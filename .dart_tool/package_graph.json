@@ -55,6 +55,7 @@
       "dependencies": []
     },
     {
+
       "name": "supabase_flutter",
       "version": "2.15.0",
       "dependencies": [
@@ -72,6 +73,7 @@
       ]
     },
     {
+
       "name": "google_fonts",
       "version": "6.3.3",
       "dependencies": [
@@ -268,6 +270,7 @@
       ]
     },
     {
+
       "name": "web",
       "version": "1.1.1",
       "dependencies": []
@@ -280,6 +283,7 @@
     {
       "name": "url_launcher",
       "version": "6.3.2",
+
       "dependencies": [
         "flutter",
         "url_launcher_android",
@@ -333,36 +337,7 @@
       ]
     },
     {
-      "name": "async",
-      "version": "2.13.1",
-      "dependencies": [
-        "collection",
-        "meta"
-      ]
-    },
-    {
-      "name": "app_links",
-      "version": "7.2.0",
-      "dependencies": [
-        "app_links_linux",
-        "app_links_platform_interface",
-        "app_links_web",
-        "flutter"
-      ]
-    },
-    {
-      "name": "path_provider",
-      "version": "2.1.6",
-      "dependencies": [
-        "flutter",
-        "path_provider_android",
-        "path_provider_foundation",
-        "path_provider_linux",
-        "path_provider_platform_interface",
-        "path_provider_windows"
-      ]
-    },
-    {
+
       "name": "crypto",
       "version": "3.0.7",
       "dependencies": [
@@ -563,6 +538,7 @@
       ]
     },
     {
+
       "name": "nested",
       "version": "1.0.0",
       "dependencies": [
@@ -570,6 +546,7 @@
       ]
     },
     {
+
       "name": "flutter_web_plugins",
       "version": "0.0.0",
       "dependencies": [
@@ -643,6 +620,7 @@
       ]
     },
     {
+
       "name": "url_launcher_windows",
       "version": "3.1.5",
       "dependencies": [
@@ -876,6 +854,7 @@
       ]
     },
     {
+
       "name": "path_provider_windows",
       "version": "2.3.0",
       "dependencies": [
@@ -926,6 +905,7 @@
       ]
     },
     {
+
       "name": "typed_data",
       "version": "1.4.0",
       "dependencies": [
@@ -1025,6 +1005,7 @@
       "dependencies": []
     },
     {
+
       "name": "retry",
       "version": "3.1.2",
       "dependencies": []
@@ -1079,6 +1060,7 @@
       ]
     },
     {
+n
       "name": "ffi",
       "version": "2.2.0",
       "dependencies": []
@@ -1092,6 +1074,7 @@
       "name": "xdg_directories",
       "version": "1.1.0",
       "dependencies": [
+
         "meta",
         "path"
       ]
@@ -1147,6 +1130,7 @@
       ]
     },
     {
+
       "name": "web_socket",
       "version": "1.0.1",
       "dependencies": [
@@ -1182,6 +1166,7 @@
       ]
     },
     {
+
       "name": "pub_semver",
       "version": "2.2.0",
       "dependencies": [
