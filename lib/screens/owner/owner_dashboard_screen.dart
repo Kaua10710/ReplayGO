@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../models/arena_model.dart';
 import '../../models/replay_model.dart';
-import '../../models/user_model.dart';
+import '../../models/profile_model.dart';
 import '../../services/mock_service.dart';
 import '../../widgets/stats_card.dart';
 
@@ -25,7 +24,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final service = context.watch<MockService>();
-    final owner = service.getUser(UserRole.owner);
+    final owner = service.getProfile(UserRole.owner);
     final arena = service.arenas.firstWhere(
       (arena) => arena.name == owner.name,
       orElse: () => service.arenas.first,
@@ -240,14 +239,14 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${replay.courtName} · ${replay.title}',
+                                '${replay.courtName ?? 'Quadra'} · ${replay.title}',
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                replay.timeAgo,
+                                replay.timeAgoLabel,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: AppColors.mutedGray,
                                 ),
