@@ -3,9 +3,13 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/responsive.dart';
 import '../../models/arena_model.dart';
+import '../../models/city_model.dart';
+import '../../models/user_model.dart';
 import '../../models/profile_model.dart';
 import '../../services/mock_service.dart';
+import '../../widgets/arena_carousel_card.dart';
 import '../../widgets/arena_list_tile.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/live_badge.dart';
@@ -60,7 +64,9 @@ class _HomeDashboard extends StatelessWidget {
     final featured = arenas.firstWhere((arena) => arena.isLive, orElse: () => arenas.first);
 
     return SafeArea(
-      child: CustomScrollView(
+      child: ResponsiveCenter(
+        maxWidth: 760,
+        child: CustomScrollView(
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -128,37 +134,24 @@ class _HomeDashboard extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   _FeaturedArenaCard(arena: featured),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Quadras em destaque',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            sliver: SliverList.separated(
-              itemCount: arenas.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final arena = arenas[index];
-                return ArenaListTile(
-                  arena: arena,
-                  onTap: () => context.push(
-                    ArenaPublicScreen.routePath,
-                    extra: ArenaPublicArguments(arenaId: arena.id),
-                  ),
-                );
-              },
-            ),
+          SliverList.builder(
+            itemCount: service.cities.length,
+            itemBuilder: (context, index) {
+              final city = service.cities[index];
+              return _CitySection(
+                city: city,
+                arenas: service.arenasForCity(city),
+              );
+            },
           ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
         ],
+        ),
       ),
     );
   }
@@ -254,6 +247,86 @@ class _FeaturedArenaCard extends StatelessWidget {
   }
 }
 
+class _CitySection extends StatelessWidget {
+  const _CitySection({required this.city, required this.arenas});
+
+  final CityModel city;
+  final List<ArenaModel> arenas;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  city.label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Text(
+                '${arenas.length} ${arenas.length == 1 ? 'quadra' : 'quadras'}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.mutedGray,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (arenas.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                'Nenhuma quadra cadastrada nesta cidade ainda.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.mutedGray,
+                ),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 190,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: arenas.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, index) {
+                final arena = arenas[index];
+                return ArenaCarouselCard(
+                  arena: arena,
+                  onTap: () => context.push(
+                    ArenaPublicScreen.routePath,
+                    extra: ArenaPublicArguments(arenaId: arena.id),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _SearchTab extends StatelessWidget {
   const _SearchTab();
 
@@ -263,7 +336,8 @@ class _SearchTab extends StatelessWidget {
     final arenas = context.watch<MockService>().arenas;
 
     return SafeArea(
-      child: Padding(
+      child: ResponsiveCenter(
+        maxWidth: 760,
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +395,8 @@ class _ReplaysTab extends StatelessWidget {
     final replays = arena.replays;
 
     return SafeArea(
-      child: Padding(
+      child: ResponsiveCenter(
+        maxWidth: 900,
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,8 +410,8 @@ class _ReplaysTab extends StatelessWidget {
             const SizedBox(height: 16),
             Expanded(
               child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: context.isMobile ? 220 : 200,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   childAspectRatio: 0.75,

@@ -8,6 +8,7 @@ class ArenaModel {
     required this.id,
     required this.name,
     required this.city,
+    this.uf = '',
     required this.status,
     required this.isLive,
     required this.replayCount,
@@ -22,6 +23,7 @@ class ArenaModel {
   final String? ownerId;
   final String name;
   final String city;
+  final String uf;
   final ArenaStatus status;
   final bool isLive;
   final int replayCount;
@@ -30,6 +32,26 @@ class ArenaModel {
   final List<CourtModel> courts;
   final List<ReplayModel> replays;
 
+  ArenaModel copyWith({
+    String? name,
+    String? city,
+    String? uf,
+    bool? isLive,
+    int? replayCount,
+    ArenaStatus? status,
+    List<CourtModel>? courts,
+    List<ReplayModel>? replays,
+  }) {
+    return ArenaModel(
+      id: id,
+      name: name ?? this.name,
+      city: city ?? this.city,
+      uf: uf ?? this.uf,
+      isLive: isLive ?? this.isLive,
+      replayCount: replayCount ?? this.replayCount,
+      status: status ?? this.status,
+      courts: courts ?? this.courts,
+      replays: replays ?? this.replays,
   factory ArenaModel.fromJson(Map<String, dynamic> json) {
     return ArenaModel(
       id: json['id'] as String,
