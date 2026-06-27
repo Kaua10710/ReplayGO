@@ -74,7 +74,7 @@ class ReplayCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        replay.duration,
+                        replay.durationLabel,
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -115,7 +115,7 @@ class ReplayCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${replay.courtName} · ${replay.timeAgo}',
+              '${replay.courtName ?? 'Quadra'} · ${replay.timeAgoLabel}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.mutedGray,
               ),
