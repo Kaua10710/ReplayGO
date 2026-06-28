@@ -841,29 +841,44 @@ class _SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
+    return const DefaultTabController(
       length: 2,
-      child: Column(
-        children: [
-          const TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.mutedGray,
-            indicatorColor: AppColors.primary,
-            tabs: [
-              Tab(text: 'Arenas', icon: Icon(Icons.sports_volleyball_outlined)),
-              Tab(text: 'Cidades', icon: Icon(Icons.location_city_outlined)),
+      child: _SettingsTabsContent(),
+    );
+  }
+}
+
+class _SettingsTabsContent extends StatelessWidget {
+  const _SettingsTabsContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: <Widget>[
+        TabBar(
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.mutedGray,
+          indicatorColor: AppColors.primary,
+          tabs: <Widget>[
+            Tab(
+              text: 'Arenas',
+              icon: Icon(Icons.sports_volleyball_outlined),
+            ),
+            Tab(
+              text: 'Cidades',
+              icon: Icon(Icons.location_city_outlined),
+            ),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            children: <Widget>[
+              _ArenasCrudTab(),
+              _CitiesCrudTab(),
             ],
           ),
-          const Expanded(
-            child: TabBarView(
-              children: [
-                _ArenasCrudTab(),
-                _CitiesCrudTab(),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

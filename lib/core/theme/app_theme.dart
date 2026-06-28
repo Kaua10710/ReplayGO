@@ -16,7 +16,7 @@ ThemeData buildReplayGoTheme() {
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       secondary: AppColors.secondary,
-      background: AppColors.backgroundLight,
+      surface: AppColors.backgroundLight,
       brightness: Brightness.light,
     ),
     textTheme: textTheme,

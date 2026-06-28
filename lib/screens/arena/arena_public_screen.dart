@@ -12,7 +12,6 @@ import '../../utils/supabase_replay_mapper.dart';
 import '../../widgets/replay_card.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/live_badge.dart';
-import '../player/replay_player_screen.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 

@@ -6,6 +6,7 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:replaygo/app.dart';
@@ -18,9 +19,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues(const {});
     await Supabase.initialize(
       url: _supabaseUrl,
-      anonKey: _supabasePublishableKey,
+      publishableKey: _supabasePublishableKey,
     );
   });
 

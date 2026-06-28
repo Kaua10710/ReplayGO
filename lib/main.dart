@@ -11,7 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: _supabaseUrl,
-    anonKey: _supabasePublishableKey,
+    publishableKey: _supabasePublishableKey,
   );
   runApp(const ReplayGoApp());
 }
