@@ -11,6 +11,7 @@ import '../../screens/home/home_screen.dart';
 import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../services/auth_service.dart';
 
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -25,17 +26,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   String? _error;
 
   @override
+
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
@@ -124,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Contas de proprietários e administradores são criadas internamente no painel admin.',
+
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.secondary,
                 ),

@@ -14,14 +14,53 @@ class AuthService {
     required String password,
     required String name,
     required UserRole role,
-  }) {
-    return _client.auth.signUp(
+  }) async {
+    final response = await _client.auth.signUp(
       email: email,
       password: password,
       data: {
         'name': name,
         'role': role.name,
       },
+    );
+
+    final user = response.user;
+    if (user != null) {
+      await _client.from('profiles').upsert({
+        'id': user.id,
+        'email': email,
+        'name': name,
+        'role': role.name,
+        'notifications': 0,
+      });
+    }
+
+    return response;
+  }
+
+  Future<AuthResponse> signUpClient({
+    required String email,
+    required String password,
+    required String name,
+  }) {
+    return signUp(
+      email: email,
+      password: password,
+      name: name,
+      role: UserRole.user,
+    );
+  }
+
+  Future<AuthResponse> signUpOwner({
+    required String email,
+    required String password,
+    required String name,
+  }) {
+    return signUp(
+      email: email,
+      password: password,
+      name: name,
+      role: UserRole.owner,
     );
   }
 
@@ -106,5 +145,22 @@ class AuthService {
       (role) => role.name == value,
       orElse: () => UserRole.user,
     );
+  }
+
+  Future<List<ProfileModel>> fetchProfilesByRole(UserRole role) async {
+    final response = await _client
+        .from('profiles')
+        .select('*')
+        .eq('role', role.name)
+        .order('created_at');
+
+    if (response is List) {
+      return response
+          .whereType<Map<String, dynamic>>()
+          .map(ProfileModel.fromJson)
+          .toList();
+    }
+
+    return const [];
   }
 }
