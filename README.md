@@ -1,6 +1,6 @@
 # ReplayGO — MVP Frontend (Flutter)
 
-ReplayGO é um aplicativo mobile voltado para replays instantâneos em quadras de areia. Este repositório contém a estrutura do MVP (Fase 1), incluindo temas, rotas, dados mockados e 8 telas conectadas via GoRouter.
+ReplayGO é um aplicativo mobile voltado para replays instantâneos em quadras de areia. Este repositório contém a estrutura do MVP (Fase 1), incluindo tema, rotas, integração com Supabase para autenticação e dados reais, além da navegação entre papéis (cliente, proprietário, admin) via GoRouter.
 
 ## 📱 Visão Geral
 - **Framework:** Flutter (Material)
@@ -9,7 +9,8 @@ ReplayGO é um aplicativo mobile voltado para replays instantâneos em quadras d
 - **Reprodutor de vídeo (placeholder):** better_player + video_player (apenas dependências)
 - **Armazenamento local (futuro):** shared_preferences (já configurado no pubspec)
 - **Cliente HTTP (futuro):** Dio
-- **Mock service:** Dados hardcoded em `MockService`
+- **Supabase:** Autenticação, perfis, arenas, replays e favoritos
+- **Mock service:** Mantido apenas como fallback enquanto o painel admin é migrado
 
 ## 🎨 Design Tokens
 - **Primária:** `#FF6B00`
@@ -37,7 +38,7 @@ lib/
 ├── models/                  # User, Arena, Court, Replay, Camera
 ├── services/
 │   └── mock_service.dart    # Dados mockados do MVP
-├── screens/                 # 8 telas do MVP
+├── screens/                 # 9 telas do MVP (inclui fluxo de registro)
 └── widgets/                 # Componentes reutilizáveis
 ```
 
@@ -45,13 +46,14 @@ lib/
 Todas usam conteúdo mockado e placeholders para vídeos.
 
 1. **Splash (`/`)** — Tema escuro com gradiente, botões de entrada e auto navegação para login.
-2. **Login (`/login`)** — Fundo claro, seletor de papel (usuário, proprietário, admin) e navegação condicional.
-3. **Home Shell (`/home`)** — Bottom nav com abas Home/Buscar/Replays/Perfil. Conteúdo para usuário final.
-4. **Arena Pública (`/arena`)** — Player placeholder, seleção de quadra, grade de replays 2xN.
-5. **Replay Player (`/replay`)** — Tela dark com controles e botões de salvar.
-6. **Perfil (`/profile`)** — Estatísticas, cards de replays e histórico de atividade.
-7. **Owner Dashboard (`/owner`)** — Cartão de streaming, métricas e lista de replays recentes.
-8. **Admin Panel (`/admin`)** — Estatísticas gerais, busca e lista de arenas com bottom sheet de ações.
+2. **Login (`/login`)** — Autenticação via Supabase, identifica o papel salvo no perfil e direciona para a área correta.
+3. **Registro (`/register`)** — Formulário público para criar contas de cliente, com envio de metadados e upsert em `profiles`.
+4. **Home Shell (`/home`)** — Bottom nav com abas Home/Buscar/Replays/Perfil. Conteúdo para usuário final.
+5. **Arena Pública (`/arena`)** — Player placeholder, seleção de quadra, grade de replays 2xN.
+6. **Replay Player (`/replay`)** — Tela dark com controles e botões de salvar.
+7. **Perfil (`/profile`)** — Estatísticas, cards de replays e histórico de atividade.
+8. **Owner Dashboard (`/owner`)** — Cartão de streaming, métricas e lista de replays recentes.
+9. **Admin Panel (`/admin`)** — Estatísticas gerais, busca, gerenciamento de arenas e criação de proprietários.
 
 ## 🧩 Widgets Compartilhados
 - `ReplayGoBottomNavBar`
@@ -61,22 +63,36 @@ Todas usam conteúdo mockado e placeholders para vídeos.
 - `StatsCard`
 - `RoleSelector`
 
-## 🗃️ Dados Mockados
-Definidos em `lib/services/mock_service.dart` com:
-- Usuário (Lucas Carvalho), proprietário (Arena Beira Mar), admin (AD)
-- Lista de arenas com status LIVE/ATIVO/INATIVO
-- Replays da Arena Beira Mar com visibilidade PÚBLICO/EXPIRADO
-- Lista de câmeras para o owner dashboard
+## 🗃️ Fontes de Dados
+- **Supabase (principal)**
+  - Perfis de usuários carregados via `UserProvider`
+  - Arenas, quadras e replays consumidos diretamente das tabelas
+  - Replays salvos gravados em `saved_replays`
+- **MockService (temporário)**
+  - Mantido apenas para rotinas ainda não migradas no painel admin
+  - Será removido quando toda a interface administrativa usar o `AdminService`
 
-`MockService` fornece métodos de acesso usados pelas telas via `Provider`.
+## 🔐 Autenticação & Perfis (Supabase)
+- Implementado com `supabase_flutter` e monitorado em `app.dart` para carregar o perfil autenticado.
+- `AuthService` centraliza `signUpClient`, `signUpOwner`, login, logout e leitura de papel.
+- `UserProvider` guarda o `ProfileModel`, expõe estados de loading/erro e inicializa a navegação pós-login.
+- Perfis são carregados diretamente da tabela `profiles`; replays salvos e métricas usam as tabelas correspondentes.
+- Proprietários e admins seguem cadastrados via painel admin (em migração para Supabase).
 
-## � Andamento do MVP
+### 🔧 Configuração rápida do Supabase
+1. Defina `url` e `anonKey` em `lib/main.dart` com os valores do seu projeto.
+2. Execute `flutter pub get`.
+3. Rode o app (`flutter run`) e valide o fluxo de registro/login.
+
+## 🚧 Andamento do MVP
 - ✅ Navegação GoRouter configurada com 8 telas interligadas.
 - ✅ Tema, tipografia, cores e componentes compartilhados padronizados.
-- ✅ Dados mock consolidados no `MockService` para cada papel (usuário, proprietário, admin).
+- ✅ Autenticação e carregamento de perfil integrados ao Supabase.
+- ✅ Telas de Perfil, Home, Owner Dashboard e Arena Pública consumindo dados reais.
 - ⚠️ Players de vídeo ainda são placeholders (dependências já no `pubspec`).
-- ⚠️ Integrações externas (Supabase/Dio/shared_preferences) aguardando backend.
-- ⚠️ Ações de botões (salvar, compartilhar, suspender arena, etc.) ainda não conectadas.
+- ⚠️ Painel admin em migração para Supabase (usa `AdminService`, porém UI ainda conecta `MockService`).
+- ⚠️ Integrações externas adicionais (Dio/shared_preferences) aguardando backend.
+- ⚠️ Botões avançados (compartilhar, controle fino de arenas) em desenvolvimento.
 
 ## 🧪 Fluxo de Testes Locais
 1. Garanta que o Flutter SDK está atualizado (`flutter --version`).
@@ -92,12 +108,13 @@ Definidos em `lib/services/mock_service.dart` com:
    ```bash
    flutter run -d chrome   # ou selecione outro dispositivo disponível
    ```
-5. Use as credenciais mockadas nos fluxos de login/registro para navegar pelos papéis.
+5. Use credenciais mockadas ou crie usuários reais (cliente pelo `/register`, proprietário via painel admin) para navegar pelos papéis.
 
 ## 🧭 Organização de Branches e Git
 - `main`: branch estável com o MVP navegável (use para releases e demonstrações).
 - `Kaua`: branch de trabalho antigo. Prefira continuar em `main` ou crie feature branches (`feature/nome-feature`).
 - Antes de commitar: `git status` (checar arquivos) → `git diff` (validar alterações) → `flutter analyze`.
+- Artefatos gerados (`.dart_tool/`, `.flutter-plugins`, `.flutter-plugins-dependencies`) estão ignorados; rode `flutter pub get` após clonar ou trocar de branch.
 - Mensagens de commit: siga o formato `tipo: resumo curto` (ex.: `docs: atualiza README com andamento do projeto`).
 
 > Dica: se precisar limpar o cache entre builds, execute `flutter clean` seguido de `flutter pub get`.
@@ -125,10 +142,20 @@ Login → (Usuário) Home Shell
 Home Shell → Arena Pública → Replay Player → Perfil
 ```
 
+## ✅ Últimas Atualizações
+- Migração do `UserProvider` para lidar com `ProfileModel` completo, incluindo estados de erro.
+- `app.dart` escuta mudanças de sessão Supabase e redireciona conforme o papel do usuário.
+- Perfil, Owner Dashboard e Arena Pública agora exibem arenas/replays reais com estados de loading/erro.
+- Criação do `AdminService` para centralizar operações do painel administrativo usando Supabase.
+- Novo utilitário `normalizeReplayRow` para padronizar joins de arenas/quadras/replays.
+
 ## ✅ Estado Atual & Próximos Passos
-- ✅ Estrutura do app, UI/UX, rotas e dados mock prontos.
-- ⏳ Aguardando integração real de vídeo, APIs via Dio e persistência local.
-- ⏳ Botões de ação (salvar, compartilhar, criar conta, etc.) aguardam implementação real.
+- ✅ Base do app, UI/UX, rotas e integração Supabase para usuário/owner em produção.
+- ✅ Fluxo de salvar replays direcionado à tabela `saved_replays`.
+- ⏳ Migrar o painel admin para consumir `AdminService` em vez de `MockService`.
+- ⏳ Remover `MockService` e providers associados após a migração total.
+- ⏳ Adicionar testes de regressão e monitorar `flutter analyze`/`flutter test` no CI.
+- ⏳ Evoluir player de vídeo e consolidar ações (compartilhar, toggle de arenas) com backend real.
 
 ## 📚 Histórico de Alterações Principais
 - Criação do `pubspec.yaml` com dependências solicitadas + `google_fonts`.

@@ -5,8 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../models/profile_model.dart';
+import '../../providers/user_provider.dart';
+import '../../screens/admin/admin_panel_screen.dart';
+import '../../screens/home/home_screen.dart';
+import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../services/auth_service.dart';
-import '../../services/mock_service.dart';
 import '../../widgets/role_selector.dart';
 import '../splash/splash_screen.dart';
 import 'register_screen.dart';
@@ -21,13 +24,36 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+class _MockCredential {
+  const _MockCredential({required this.email, required this.password});
+
+  final String email;
+  final String password;
+}
+
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   UserRole _selectedRole = UserRole.user;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _useMockCredentials = false;
   String? _error;
+
+  static const Map<UserRole, _MockCredential> _mockProfiles = {
+    UserRole.user: _MockCredential(
+      email: 'lucas@replaygo.com',
+      password: 'Test@1234',
+    ),
+    UserRole.owner: _MockCredential(
+      email: 'arena@replaygo.com',
+      password: 'Owner@1234',
+    ),
+    UserRole.admin: _MockCredential(
+      email: 'admin@replaygo.com',
+      password: 'Admin@1234',
+    ),
+  };
 
   @override
   void dispose() {
@@ -36,25 +62,30 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _prefillCredentials(_selectedRole);
+  String _roleLabel(UserRole role) {
+    switch (role) {
+      case UserRole.owner:
+        return 'estabelecimento';
+      case UserRole.admin:
+        return 'administrador';
+      case UserRole.user:
+      default:
+        return 'usuário';
+    }
   }
 
-  void _prefillCredentials(UserRole role) {
-    switch (role) {
-      case UserRole.user:
-        _emailController.text = 'lucas@replaygo.com';
-        break;
-      case UserRole.owner:
-        _emailController.text = 'arena@replaygo.com';
-        break;
-      case UserRole.admin:
-        _emailController.text = 'admin@replaygo.com';
-        break;
+  void _applyMockCredentials(UserRole role) {
+    if (!_useMockCredentials) {
+      return;
     }
-    _passwordController.text = 'Test@1234';
+
+    final credential = _mockProfiles[role];
+    if (credential == null) {
+      return;
+    }
+
+    _emailController.text = credential.email;
+    _passwordController.text = credential.password;
   }
 
   Future<void> _handleLogin() async {
@@ -68,8 +99,25 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await authService.signIn(email: email, password: password);
-      // Navegação acontece via listener em app.dart
+      final role = await authService.signIn(email: email, password: password);
+
+      if (!mounted) {
+        return;
+      }
+
+      await context.read<UserProvider>().loadProfile();
+
+      switch (role) {
+        case UserRole.owner:
+          context.go(OwnerDashboardScreen.routePath);
+          break;
+        case UserRole.admin:
+          context.go(AdminPanelScreen.routePath);
+          break;
+        case UserRole.user:
+          context.go(HomeShell.routePath);
+          break;
+      }
     } on AuthException catch (error) {
       setState(() => _error = error.message);
     } catch (error) {
@@ -84,9 +132,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final service = context.read<MockService>();
-    final profile = service.getProfile(_selectedRole);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
@@ -141,10 +186,10 @@ class _LoginScreenState extends State<LoginScreen> {
               RoleSelector(
                 selectedRole: _selectedRole,
                 onChanged: (UserRole role) {
-                  setState(() {
-                    _selectedRole = role;
-                    _prefillCredentials(role);
-                  });
+                  setState(() => _selectedRole = role);
+                  if (_useMockCredentials) {
+                    _applyMockCredentials(role);
+                  }
                 },
               ),
               const SizedBox(height: 24),
@@ -163,6 +208,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              CheckboxListTile(
+                value: _useMockCredentials,
+                onChanged: (value) {
+                  setState(() => _useMockCredentials = value ?? false);
+                  if (value ?? false) {
+                    _applyMockCredentials(_selectedRole);
+                  }
+                },
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(
+                  'Preencher automaticamente com dados de teste',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -217,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text('Entrar como ${profile.name.split(' ').first}'),
+                    : Text('Entrar como ${_roleLabel(_selectedRole)}'),
               ),
               const SizedBox(height: 16),
               Center(

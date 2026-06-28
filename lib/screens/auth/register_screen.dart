@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../models/profile_model.dart';
+import '../../providers/user_provider.dart';
+import '../../screens/admin/admin_panel_screen.dart';
+import '../../screens/home/home_screen.dart';
+import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../services/auth_service.dart';
-import '../../services/mock_service.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,17 +26,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController(text: 'Test@1234');
+
   bool _isLoading = false;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _prefillFields();
-  }
 
-  @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
@@ -39,11 +39,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _prefillFields() {
-    final mockProfile = context.read<MockService>().getProfile(UserRole.user);
-    _nameController.text = mockProfile.name;
-    _emailController.text = mockProfile.email;
-  }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
@@ -66,13 +61,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
         name: name,
       );
+
+      if (!mounted) return;
+
+      final role = await authService.signIn(email: email, password: password);
+
+      if (!mounted) return;
+
+      await context.read<UserProvider>().loadProfile();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Conta criada! Verifique seu email e faça login.'),
-        ),
+        const SnackBar(content: Text('Conta criada com sucesso!')),
       );
-      Navigator.of(context).pop();
+      switch (role) {
+        case UserRole.owner:
+          context.go(OwnerDashboardScreen.routePath);
+          break;
+        case UserRole.admin:
+          context.go(AdminPanelScreen.routePath);
+          break;
+        case UserRole.user:
+          context.go(HomeShell.routePath);
+          break;
+      }
     } on AuthException catch (error) {
       setState(() => _error = error.message);
     } catch (error) {
@@ -115,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Contas de estabelecimento e administradores são criadas via painel interno.',
+
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.secondary,
                 ),
@@ -137,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
-                  labelText: 'Email profissional',
+                  labelText: 'Email',
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
@@ -154,7 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
-                  labelText: 'Senha temporária',
+                  labelText: 'Senha',
                 ),
                 obscureText: true,
                 validator: (value) {
@@ -187,7 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Após o cadastro, valide o email para ativar o acesso.',
+                'Após o cadastro concluímos o login automaticamente. Você poderá acessar novamente pela tela de login do usuário.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.mutedGray,
                 ),

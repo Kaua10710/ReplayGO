@@ -19,4 +19,20 @@ class CityModel {
       uf: uf ?? this.uf,
     );
   }
+
+  factory CityModel.fromJson(Map<String, dynamic> json) {
+    return CityModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      uf: (json['uf'] as String? ?? '').toUpperCase(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'uf': uf,
+    };
+  }
 }
