@@ -4,8 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../models/profile_model.dart';
+import '../../providers/user_provider.dart';
+import '../../screens/admin/admin_panel_screen.dart';
+import '../../screens/home/home_screen.dart';
+import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../services/auth_service.dart';
-import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -57,13 +61,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      await authService.signIn(email: email, password: password);
+      final role = await authService.signIn(email: email, password: password);
+
+      if (!mounted) return;
+
+      await context.read<UserProvider>().loadProfile();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Conta criada com sucesso!')),
       );
-      context.go(HomeShell.routePath);
+      switch (role) {
+        case UserRole.owner:
+          context.go(OwnerDashboardScreen.routePath);
+          break;
+        case UserRole.admin:
+          context.go(AdminPanelScreen.routePath);
+          break;
+        case UserRole.user:
+          context.go(HomeShell.routePath);
+          break;
+      }
     } on AuthException catch (error) {
       setState(() => _error = error.message);
     } catch (error) {

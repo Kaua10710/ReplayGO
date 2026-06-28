@@ -9,6 +9,8 @@ import 'screens/admin/admin_panel_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/owner/owner_dashboard_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'providers/user_provider.dart';
+import 'services/admin_service.dart';
 import 'services/auth_service.dart';
 import 'services/mock_service.dart';
 
@@ -22,20 +24,38 @@ class ReplayGoApp extends StatefulWidget {
 class _ReplayGoAppState extends State<ReplayGoApp> {
   late final AppRouter _appRouter;
   final AuthService _authService = AuthService();
+  final MockService _mockService = MockService();
+  final UserProvider _userProvider = UserProvider();
+  final AdminService _adminService = AdminService();
 
   @override
   void initState() {
     super.initState();
-    _appRouter = AppRouter(MockService());
-    _authService.onAuthStateChange.listen((data) {
+    _appRouter = AppRouter();
+    _authService.onAuthStateChange.listen((data) async {
       final event = data.event;
       final session = data.session;
       if (event == AuthChangeEvent.signedIn) {
+        try {
+          await _userProvider.loadProfile();
+        } catch (_) {
+          // intentionally ignored; UserProvider maintains error state.
+        }
         _redirect(session);
       } else if (event == AuthChangeEvent.signedOut) {
+        _userProvider.clearProfile();
         _appRouter.router.go(SplashScreen.routePath);
       }
     });
+
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      _userProvider.loadProfile().whenComplete(() {
+        if (mounted) {
+          _redirect(currentSession);
+        }
+      });
+    }
   }
 
   Future<void> _redirect(Session? session) async {
@@ -57,8 +77,6 @@ class _ReplayGoAppState extends State<ReplayGoApp> {
       case UserRole.user:
         _appRouter.router.go(HomeShell.routePath);
         break;
-      default:
-        _appRouter.router.go(SplashScreen.routePath);
     }
   }
 
@@ -66,8 +84,10 @@ class _ReplayGoAppState extends State<ReplayGoApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<MockService>.value(value: _appRouter.service),
+        ChangeNotifierProvider<MockService>.value(value: _mockService),
+        ChangeNotifierProvider<UserProvider>.value(value: _userProvider),
         Provider<AuthService>.value(value: _authService),
+        Provider<AdminService>.value(value: _adminService),
       ],
       child: MaterialApp.router(
         title: 'ReplayGO',

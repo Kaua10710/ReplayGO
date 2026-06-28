@@ -14,8 +14,8 @@ class AuthService {
     required String password,
     required String name,
     required UserRole role,
-  }) async {
-    final response = await _client.auth.signUp(
+  }) {
+    return _client.auth.signUp(
       email: email,
       password: password,
       data: {
@@ -23,46 +23,66 @@ class AuthService {
         'role': role.name,
       },
     );
-
-    final user = response.user;
-    if (user != null) {
-      try {
-        await _client.from('profiles').upsert({
-          'id': user.id,
-          'email': email,
-          'name': name,
-          'role': role.name,
-        });
-      } on PostgrestException catch (error) {
-        throw AuthException(error.message);
-      }
-    }
-
-    return response;
   }
 
-  Future<AuthResponse> signIn({
+  Future<AuthResponse> signUpClient({
     required String email,
     required String password,
+    required String name,
   }) {
-    return _client.auth.signInWithPassword(
+    return signUp(
+      email: email,
+      password: password,
+      name: name,
+      role: UserRole.user,
+    );
+  }
+
+  Future<UserRole> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _client.auth.signInWithPassword(
       email: email,
       password: password,
     );
+
+    final user = response.user;
+    if (user == null) {
+      throw const AuthException('Credenciais inválidas.');
+    }
+
+    final metadataRole = _roleFromMetadata(user.userMetadata);
+    if (metadataRole != null) {
+      return metadataRole;
+    }
+
+    final profileRole = await _fetchRoleFromProfiles(user.id);
+    return profileRole ?? UserRole.user;
   }
 
   Future<void> signOut() => _client.auth.signOut();
 
-  Future<UserRole?> getCurrentUserRole() async {
+  Future<UserRole> getCurrentUserRole() async {
     final user = _client.auth.currentUser;
     if (user == null) {
-      return null;
+      return UserRole.user;
     }
 
+    final metadataRole = _roleFromMetadata(user.userMetadata);
+    if (metadataRole != null) {
+      return metadataRole;
+    }
+
+    final profileRole = await _fetchRoleFromProfiles(user.id);
+    return profileRole ?? UserRole.user;
+  }
+
+  Future<UserRole?> _fetchRoleFromProfiles(String userId) async {
     final response = await _client
         .from('profiles')
         .select('role')
-        .eq('id', user.id)
+        .eq('id', userId)
         .maybeSingle();
 
     final roleValue = response?['role'] as String?;
@@ -70,8 +90,20 @@ class AuthService {
       return null;
     }
 
+    return _roleFromString(roleValue);
+  }
+
+  UserRole? _roleFromMetadata(Map<String, dynamic>? metadata) {
+    final roleValue = metadata?['role'] as String?;
+    if (roleValue == null) {
+      return null;
+    }
+    return _roleFromString(roleValue);
+  }
+
+  UserRole _roleFromString(String value) {
     return UserRole.values.firstWhere(
-      (role) => role.name == roleValue,
+      (role) => role.name == value,
       orElse: () => UserRole.user,
     );
   }

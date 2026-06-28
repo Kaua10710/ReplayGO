@@ -11,17 +11,14 @@ import '../../screens/player/replay_player_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash/splash_screen.dart';
 import '../../widgets/bottom_nav_bar.dart';
-import '../../services/mock_service.dart';
 
 class AppRouter {
-  AppRouter(this.service)
+  AppRouter()
       : router = GoRouter(
           initialLocation: SplashScreen.routePath,
           navigatorKey: _rootNavigatorKey,
           routes: _routes,
         );
-
-  final MockService service;
   final GoRouter router;
 
   static final GlobalKey<NavigatorState> _rootNavigatorKey =

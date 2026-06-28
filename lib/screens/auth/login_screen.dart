@@ -5,8 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../models/profile_model.dart';
+import '../../providers/user_provider.dart';
+import '../../screens/admin/admin_panel_screen.dart';
+import '../../screens/home/home_screen.dart';
+import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../services/auth_service.dart';
-import '../../services/mock_service.dart';
 import '../../widgets/role_selector.dart';
 import '../splash/splash_screen.dart';
 import 'register_screen.dart';
@@ -21,6 +24,13 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+class _MockCredential {
+  const _MockCredential({required this.email, required this.password});
+
+  final String email;
+  final String password;
+}
+
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -29,6 +39,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _useMockCredentials = false;
   String? _error;
+
+  static const Map<UserRole, _MockCredential> _mockProfiles = {
+    UserRole.user: _MockCredential(
+      email: 'lucas@replaygo.com',
+      password: 'Test@1234',
+    ),
+    UserRole.owner: _MockCredential(
+      email: 'arena@replaygo.com',
+      password: 'Owner@1234',
+    ),
+    UserRole.admin: _MockCredential(
+      email: 'admin@replaygo.com',
+      password: 'Admin@1234',
+    ),
+  };
 
   @override
   void dispose() {
@@ -54,10 +79,13 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final mockService = context.read<MockService>();
-    final profile = mockService.getProfile(role);
-    _emailController.text = profile.email;
-    _passwordController.text = 'Test@1234';
+    final credential = _mockProfiles[role];
+    if (credential == null) {
+      return;
+    }
+
+    _emailController.text = credential.email;
+    _passwordController.text = credential.password;
   }
 
   Future<void> _handleLogin() async {
@@ -71,8 +99,25 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await authService.signIn(email: email, password: password);
-      // Navegação acontece via listener em app.dart
+      final role = await authService.signIn(email: email, password: password);
+
+      if (!mounted) {
+        return;
+      }
+
+      await context.read<UserProvider>().loadProfile();
+
+      switch (role) {
+        case UserRole.owner:
+          context.go(OwnerDashboardScreen.routePath);
+          break;
+        case UserRole.admin:
+          context.go(AdminPanelScreen.routePath);
+          break;
+        case UserRole.user:
+          context.go(HomeShell.routePath);
+          break;
+      }
     } on AuthException catch (error) {
       setState(() => _error = error.message);
     } catch (error) {
