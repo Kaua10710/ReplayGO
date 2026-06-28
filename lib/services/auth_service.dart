@@ -14,8 +14,8 @@ class AuthService {
     required String password,
     required String name,
     required UserRole role,
-  }) {
-    return _client.auth.signUp(
+  }) async {
+    final response = await _client.auth.signUp(
       email: email,
       password: password,
       data: {
@@ -23,6 +23,22 @@ class AuthService {
         'role': role.name,
       },
     );
+
+    final user = response.user;
+    if (user != null) {
+      try {
+        await _client.from('profiles').upsert({
+          'id': user.id,
+          'email': email,
+          'name': name,
+          'role': role.name,
+        });
+      } on PostgrestException catch (error) {
+        throw AuthException(error.message);
+      }
+    }
+
+    return response;
   }
 
   Future<AuthResponse> signIn({
@@ -47,9 +63,9 @@ class AuthService {
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-    final roleValue = response['role'] as String?;
+    final roleValue = response?['role'] as String?;
     if (roleValue == null) {
       return null;
     }

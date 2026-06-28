@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/mock_service.dart';
 import '../../widgets/role_selector.dart';
 import '../splash/splash_screen.dart';
 import 'register_screen.dart';
@@ -26,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   UserRole _selectedRole = UserRole.user;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _useMockCredentials = false;
   String? _error;
 
   @override
@@ -38,13 +40,24 @@ class _LoginScreenState extends State<LoginScreen> {
   String _roleLabel(UserRole role) {
     switch (role) {
       case UserRole.owner:
-        return 'Estabelecimento';
+        return 'estabelecimento';
       case UserRole.admin:
-        return 'Administrador';
+        return 'administrador';
       case UserRole.user:
       default:
-        return 'Usuário';
+        return 'usuário';
     }
+  }
+
+  void _applyMockCredentials(UserRole role) {
+    if (!_useMockCredentials) {
+      return;
+    }
+
+    final mockService = context.read<MockService>();
+    final profile = mockService.getProfile(role);
+    _emailController.text = profile.email;
+    _passwordController.text = 'Test@1234';
   }
 
   Future<void> _handleLogin() async {
@@ -129,6 +142,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 selectedRole: _selectedRole,
                 onChanged: (UserRole role) {
                   setState(() => _selectedRole = role);
+                  if (_useMockCredentials) {
+                    _applyMockCredentials(role);
+                  }
                 },
               ),
               const SizedBox(height: 24),
@@ -147,6 +163,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              CheckboxListTile(
+                value: _useMockCredentials,
+                onChanged: (value) {
+                  setState(() => _useMockCredentials = value ?? false);
+                  if (value ?? false) {
+                    _applyMockCredentials(_selectedRole);
+                  }
+                },
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(
+                  'Preencher automaticamente com dados de teste',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,

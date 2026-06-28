@@ -21,7 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController(text: 'Test@1234');
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _error;
 
@@ -128,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
-                  labelText: 'Email profissional',
+                  labelText: 'Email',
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
@@ -145,7 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
-                  labelText: 'Senha temporária',
+                  labelText: 'Senha',
                 ),
                 obscureText: true,
                 validator: (value) {
