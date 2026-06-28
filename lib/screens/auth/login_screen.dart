@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../services/auth_service.dart';
-import '../../services/mock_service.dart';
 import '../../widgets/role_selector.dart';
 import '../splash/splash_screen.dart';
 import 'register_screen.dart';
@@ -36,25 +35,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _prefillCredentials(_selectedRole);
-  }
-
-  void _prefillCredentials(UserRole role) {
+  String _roleLabel(UserRole role) {
     switch (role) {
-      case UserRole.user:
-        _emailController.text = 'lucas@replaygo.com';
-        break;
       case UserRole.owner:
-        _emailController.text = 'arena@replaygo.com';
-        break;
+        return 'Estabelecimento';
       case UserRole.admin:
-        _emailController.text = 'admin@replaygo.com';
-        break;
+        return 'Administrador';
+      case UserRole.user:
+      default:
+        return 'Usuário';
     }
-    _passwordController.text = 'Test@1234';
   }
 
   Future<void> _handleLogin() async {
@@ -84,9 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final service = context.read<MockService>();
-    final profile = service.getProfile(_selectedRole);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
@@ -141,10 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
               RoleSelector(
                 selectedRole: _selectedRole,
                 onChanged: (UserRole role) {
-                  setState(() {
-                    _selectedRole = role;
-                    _prefillCredentials(role);
-                  });
+                  setState(() => _selectedRole = role);
                 },
               ),
               const SizedBox(height: 24),
@@ -217,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text('Entrar como ${profile.name.split(' ').first}'),
+                    : Text('Entrar como ${_roleLabel(_selectedRole)}'),
               ),
               const SizedBox(height: 16),
               Center(
