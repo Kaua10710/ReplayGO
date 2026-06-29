@@ -64,19 +64,6 @@ class AuthService {
     );
   }
 
-  Future<AuthResponse> signUpClient({
-    required String email,
-    required String password,
-    required String name,
-  }) {
-    return signUp(
-      email: email,
-      password: password,
-      name: name,
-      role: UserRole.user,
-    );
-  }
-
   Future<UserRole> signIn({
     required String email,
     required String password,
@@ -148,19 +135,15 @@ class AuthService {
   }
 
   Future<List<ProfileModel>> fetchProfilesByRole(UserRole role) async {
-    final response = await _client
+    final List<dynamic> response = await _client
         .from('profiles')
         .select('*')
         .eq('role', role.name)
         .order('created_at');
 
-    if (response is List) {
-      return response
-          .whereType<Map<String, dynamic>>()
-          .map(ProfileModel.fromJson)
-          .toList();
-    }
-
-    return const [];
+    return response
+        .whereType<Map<String, dynamic>>()
+        .map(ProfileModel.fromJson)
+        .toList();
   }
 }

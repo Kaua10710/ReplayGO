@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../models/arena_model.dart';
+import '../../models/court_model.dart';
 import '../../models/replay_model.dart';
 import '../../providers/user_provider.dart';
 import '../../utils/supabase_replay_mapper.dart';
+import '../../widgets/replay_share_sheet.dart';
 import '../../widgets/stats_card.dart';
 import '../player/replay_player_screen.dart';
 
@@ -116,10 +119,331 @@ class _OwnerDashboardState extends State<OwnerDashboardScreen> {
         _pendingLiveOverride.remove(arena.id);
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isUpdatingLive = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUpdatingLive = false;
+        });
+        await _refresh();
+      }
+    }
+  }
+
+  Future<void> _handleShareReplay(ReplayModel replay) async {
+    if (!mounted) return;
+    final message = await showReplayShareSheet(context, replay);
+    if (!mounted || message == null) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+  }
+
+  String _statusLabel(ArenaStatus status) {
+    switch (status) {
+      case ArenaStatus.active:
+        return 'Ativa';
+      case ArenaStatus.inactive:
+        return 'Inativa';
+    }
+  }
+
+  Future<bool> _updateArenaStatus(ArenaModel arena, ArenaStatus status) async {
+    final client = Supabase.instance.client;
+
+    try {
+      await client.from('arenas').update({'status': status.name}).eq('id', arena.id);
+      if (!mounted) {
+        return true;
+      }
+      final message = status == ArenaStatus.active
+          ? 'Arena reativada. Clientes voltam a visualizar os replays.'
+          : 'Arena marcada como inativa. Ela fica oculta para clientes.';
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      return true;
+    } on PostgrestException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Erro ao atualizar status: ${error.message}'),
+              backgroundColor: AppColors.secondary,
+            ),
+          );
+      }
+      return false;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível alterar o status da arena.'),
+              backgroundColor: AppColors.secondary,
+            ),
+          );
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _updateCourtLiveStatus(CourtModel court, bool value) async {
+    final client = Supabase.instance.client;
+
+    try {
+      await client.from('courts').update({'is_live': value}).eq('id', court.id);
+      if (mounted) {
+        final message = value
+            ? '"${court.name}" ficará visível para os clientes.'
+            : '"${court.name}" foi ocultada do app.';
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+      }
+      return true;
+    } on PostgrestException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Erro ao atualizar a quadra: ${error.message}'),
+              backgroundColor: AppColors.secondary,
+            ),
+          );
+      }
+      return false;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível atualizar a quadra.'),
+              backgroundColor: AppColors.secondary,
+            ),
+          );
+      }
+      return false;
+    }
+  }
+
+  Future<void> _copyArenaLink(ArenaModel arena) async {
+    final link = 'https://replaygo.app/arenas/${arena.id}';
+    await Clipboard.setData(ClipboardData(text: link));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Link da arena copiado para a área de transferência.'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+  }
+
+  Future<void> _openAdvancedControls(ArenaModel arena) async {
+    if (!mounted) return;
+
+    var shouldRefresh = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) {
+        final overrides = <String, bool>{
+          for (final court in arena.courts) court.id: court.isLive,
+        };
+        final busyCourts = <String>{};
+        var localStatus = arena.status;
+        var busyArena = false;
+
+        return StatefulBuilder(
+          builder: (context, sheetSetState) {
+            final theme = Theme.of(context);
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 12,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.lightGray,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Controles avançados',
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      arena.name,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.mutedGray),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Status da arena',
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      children: ArenaStatus.values.map((status) {
+                        final selected = localStatus == status;
+                        return ChoiceChip(
+                          label: Text(_statusLabel(status)),
+                          selected: selected,
+                          onSelected: (!selected && !busyArena)
+                              ? (value) async {
+                                  if (!value) return;
+                                  sheetSetState(() => busyArena = true);
+                                  final success = await _updateArenaStatus(arena, status);
+                                  if (!mounted) return;
+                                  sheetSetState(() {
+                                    busyArena = false;
+                                    if (success) {
+                                      localStatus = status;
+                                      shouldRefresh = true;
+                                    }
+                                  });
+                                }
+                              : null,
+                        );
+                      }).toList(),
+                    ),
+                    if (busyArena)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: LinearProgressIndicator(),
+                      ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Quadras com câmeras',
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    if (arena.courts.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundLight,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'Nenhuma quadra vinculada a esta arena.',
+                          style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.mutedGray),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: arena.courts.map((court) {
+                          final value = overrides[court.id] ?? court.isLive;
+                          final isLoading = busyCourts.contains(court.id);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x0F000000),
+                                    blurRadius: 10,
+                                    offset: Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: SwitchListTile.adaptive(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                title: Text(court.name),
+                                subtitle: Text(
+                                  value ? 'Visível para clientes' : 'Ocultada do app',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.mutedGray),
+                                ),
+                                value: value,
+                                onChanged: isLoading
+                                    ? null
+                                    : (newValue) async {
+                                        sheetSetState(() => busyCourts.add(court.id));
+                                        final success = await _updateCourtLiveStatus(court, newValue);
+                                        if (!mounted) return;
+                                        sheetSetState(() {
+                                          busyCourts.remove(court.id);
+                                          if (success) {
+                                            overrides[court.id] = newValue;
+                                            shouldRefresh = true;
+                                          }
+                                        });
+                                      },
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    const SizedBox(height: 24),
+                    FilledButton.tonalIcon(
+                      onPressed: () async {
+                        await _copyArenaLink(arena);
+                      },
+                      icon: const Icon(Icons.link),
+                      label: const Text('Copiar link da arena'),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Compartilhe o link para que clientes encontrem os replays desta arena rapidamente.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.mutedGray),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (shouldRefresh) {
       await _refresh();
     }
   }
@@ -205,6 +529,25 @@ class _OwnerDashboardState extends State<OwnerDashboardScreen> {
                             isLoading: _isUpdatingLive,
                             onToggle: (value) => _updateLiveStatus(selectedArena, value),
                           ),
+                        if (selectedArena != null) ...[
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: () => _openAdvancedControls(selectedArena),
+                            icon: const Icon(Icons.tune),
+                            label: const Text('Controles avançados'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 48),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Altere visibilidade das quadras, copie link público ou ative/desative a arena.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: AppColors.mutedGray),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         if (selectedArena != null)
                           Row(
@@ -270,6 +613,7 @@ class _OwnerDashboardState extends State<OwnerDashboardScreen> {
                                     replay: replay,
                                   ),
                                 ),
+                                onShare: () => _handleShareReplay(replay),
                               );
                             }).toList(),
                           ),
@@ -346,7 +690,7 @@ class _OwnerHeader extends StatelessWidget {
           SizedBox(
             width: 200,
             child: DropdownButtonFormField<String>(
-              value: selectedArenaId,
+              initialValue: selectedArenaId,
               decoration: const InputDecoration(
                 labelText: 'Selecionar arena',
                 filled: true,
@@ -423,10 +767,24 @@ class _OwnerStreamingCard extends StatelessWidget {
               Switch.adaptive(
                 value: isLive,
                 onChanged: isLoading ? null : onToggle,
-                activeColor: AppColors.primary,
-                activeTrackColor: Colors.white,
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: Colors.white24,
+                thumbColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.white70;
+                  }
+                  if (states.contains(WidgetState.selected)) {
+                    return AppColors.primary;
+                  }
+                  return Colors.white;
+                }),
+                trackColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.white24;
+                  }
+                  if (states.contains(WidgetState.selected)) {
+                    return Colors.white;
+                  }
+                  return Colors.white24;
+                }),
               ),
             ],
           ),
@@ -586,10 +944,15 @@ class _OwnerMessageCard extends StatelessWidget {
 }
 
 class _ReplayListTile extends StatelessWidget {
-  const _ReplayListTile({required this.replay, required this.onTap});
+  const _ReplayListTile({
+    required this.replay,
+    required this.onTap,
+    this.onShare,
+  });
 
   final ReplayModel replay;
   final VoidCallback onTap;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -644,6 +1007,13 @@ class _ReplayListTile extends StatelessWidget {
                 ],
               ),
             ),
+            if (onShare != null) ...[
+              IconButton(
+                tooltip: 'Compartilhar replay',
+                onPressed: onShare,
+                icon: const Icon(Icons.ios_share, color: AppColors.primary),
+              ),
+            ],
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
