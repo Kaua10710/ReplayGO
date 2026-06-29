@@ -21,11 +21,48 @@ class AdminDashboardData {
   int get totalArenas => arenas.length;
 }
 
-class AdminService {
+/// Contrato consumido pelo `AdminController`. Permite injetar uma implementação
+/// fake nos testes sem depender do Supabase.
+abstract class AdminDataSource {
+  Future<AdminDashboardData> loadDashboard();
+
+  Future<ArenaModel> createArena({
+    required String name,
+    required String city,
+    required String uf,
+    bool isLive = false,
+    int replayCount = 0,
+    ArenaStatus status = ArenaStatus.active,
+    String? ownerId,
+  });
+
+  Future<void> updateArena(
+    String id, {
+    String? name,
+    String? city,
+    String? uf,
+    bool? isLive,
+    int? replayCount,
+    ArenaStatus? status,
+  });
+
+  Future<void> deleteArena(String id);
+
+  Future<CityModel> createCity({required String name, required String uf});
+
+  Future<void> updateCity(String id, {String? name, String? uf});
+
+  Future<void> deleteCity(String id);
+
+  Future<bool> cityExists(String name, String uf);
+}
+
+class AdminService implements AdminDataSource {
   AdminService();
 
   final SupabaseClient _client = Supabase.instance.client;
 
+  @override
   Future<AdminDashboardData> loadDashboard() async {
     final results = await Future.wait([
       _fetchArenasInternal(),
@@ -51,6 +88,7 @@ class AdminService {
 
   Future<List<CityModel>> fetchCities() => _fetchCitiesInternal();
 
+  @override
   Future<ArenaModel> createArena({
     required String name,
     required String city,
@@ -77,6 +115,7 @@ class AdminService {
     return ArenaModel.fromJson(Map<String, dynamic>.from(response));
   }
 
+  @override
   Future<void> updateArena(
     String id, {
     String? name,
@@ -101,10 +140,12 @@ class AdminService {
     await _client.from('arenas').update(payload).eq('id', id);
   }
 
+  @override
   Future<void> deleteArena(String id) async {
     await _client.from('arenas').delete().eq('id', id);
   }
 
+  @override
   Future<CityModel> createCity({
     required String name,
     required String uf,
@@ -121,6 +162,7 @@ class AdminService {
     return CityModel.fromJson(Map<String, dynamic>.from(response));
   }
 
+  @override
   Future<void> updateCity(
     String id, {
     String? name,
@@ -134,10 +176,12 @@ class AdminService {
     await _client.from('cities').update(payload).eq('id', id);
   }
 
+  @override
   Future<void> deleteCity(String id) async {
     await _client.from('cities').delete().eq('id', id);
   }
 
+  @override
   Future<bool> cityExists(String name, String uf) async {
     final response = await _client
         .from('cities')

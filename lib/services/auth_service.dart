@@ -89,6 +89,10 @@ class AuthService {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  /// Envia um email de redefinição de senha para o endereço informado.
+  Future<void> resetPassword(String email) =>
+      _client.auth.resetPasswordForEmail(email.trim());
+
   Future<UserRole> getCurrentUserRole() async {
     final user = _client.auth.currentUser;
     if (user == null) {
