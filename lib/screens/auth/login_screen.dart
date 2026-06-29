@@ -47,11 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
     ),
     UserRole.owner: _MockCredential(
       email: 'arena@replaygo.com',
-      password: 'Owner@1234',
+      password: 'Test@1234',
     ),
     UserRole.admin: _MockCredential(
       email: 'admin@replaygo.com',
-      password: 'Admin@1234',
+      password: 'Test@1234',
     ),
   };
 
@@ -62,17 +62,11 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  String _roleLabel(UserRole role) {
-    switch (role) {
-      case UserRole.owner:
-        return 'estabelecimento';
-      case UserRole.admin:
-        return 'administrador';
-      case UserRole.user:
-      default:
-        return 'usuário';
-    }
-  }
+  String _roleLabel(UserRole role) => switch (role) {
+        UserRole.owner => 'estabelecimento',
+        UserRole.admin => 'administrador',
+        UserRole.user => 'usuário',
+      };
 
   void _applyMockCredentials(UserRole role) {
     if (!_useMockCredentials) {
@@ -90,6 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     final authService = context.read<AuthService>();
+    final userProvider = context.read<UserProvider>();
+    final router = GoRouter.of(context);
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -105,17 +101,17 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      await context.read<UserProvider>().loadProfile();
+      await userProvider.loadProfile();
 
       switch (role) {
         case UserRole.owner:
-          context.go(OwnerDashboardScreen.routePath);
+          router.go(OwnerDashboardScreen.routePath);
           break;
         case UserRole.admin:
-          context.go(AdminPanelScreen.routePath);
+          router.go(AdminPanelScreen.routePath);
           break;
         case UserRole.user:
-          context.go(HomeShell.routePath);
+          router.go(HomeShell.routePath);
           break;
       }
     } on AuthException catch (error) {
@@ -208,22 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              CheckboxListTile(
-                value: _useMockCredentials,
-                onChanged: (value) {
-                  setState(() => _useMockCredentials = value ?? false);
-                  if (value ?? false) {
-                    _applyMockCredentials(_selectedRole);
-                  }
-                },
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                title: Text(
-                  'Preencher automaticamente com dados de teste',
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-              const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -246,6 +226,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
                   ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: _useMockCredentials,
+                onChanged: (value) {
+                  setState(() => _useMockCredentials = value ?? false);
+                  if (value ?? false) {
+                    _applyMockCredentials(_selectedRole);
+                  }
+                },
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(
+                  'Preencher automaticamente com dados de teste',
+                  style: theme.textTheme.bodyMedium,
                 ),
               ),
               const SizedBox(height: 8),

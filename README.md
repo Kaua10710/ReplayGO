@@ -92,7 +92,7 @@ Todas usam conteúdo mockado e placeholders para vídeos.
 - ⚠️ Players de vídeo ainda são placeholders (dependências já no `pubspec`).
 - ⚠️ Painel admin em migração para Supabase (usa `AdminService`, porém UI ainda conecta `MockService`).
 - ⚠️ Integrações externas adicionais (Dio/shared_preferences) aguardando backend.
-- ⚠️ Botões avançados (compartilhar, controle fino de arenas) em desenvolvimento.
+- ✅ Botões avançados (compartilhar, controle fino de arenas) liberados nas telas de replays e painel do proprietário.
 
 ## 🧪 Fluxo de Testes Locais
 1. Garanta que o Flutter SDK está atualizado (`flutter --version`).
@@ -109,6 +109,16 @@ Todas usam conteúdo mockado e placeholders para vídeos.
    flutter run -d chrome   # ou selecione outro dispositivo disponível
    ```
 5. Use credenciais mockadas ou crie usuários reais (cliente pelo `/register`, proprietário via painel admin) para navegar pelos papéis.
+
+## ✅ Checklist de Validação Manual
+Antes de liberar uma entrega, execute estes testes rápidos:
+
+- [ ] Login como **admin@replaygo.com / Test@1234** e confirme o redirecionamento para o **Admin Panel**.
+- [ ] Login como **arena@replaygo.com / Test@1234** e confirme o redirecionamento para o **Owner Dashboard**.
+- [ ] Login como cliente pelo `/register` ou usando conta existente e confirme o acesso ao **Home Shell**.
+- [ ] Na **Arena Pública**, realize ações de salvar e compartilhar replay (verifique snackbars de sucesso/falha).
+- [ ] No **Owner Dashboard**, abra “Controles avançados”, altere status da arena e visibilidade das quadras, e valide o feedback exibido.
+- [ ] Execute uma navegação completa: Home → Arena Pública → Replay Player → Perfil e retorne ao dashboard apropriado.
 
 ## 🧭 Organização de Branches e Git
 - `main`: branch estável com o MVP navegável (use para releases e demonstrações).
@@ -155,7 +165,7 @@ Home Shell → Arena Pública → Replay Player → Perfil
 - ⏳ Migrar o painel admin para consumir `AdminService` em vez de `MockService`.
 - ⏳ Remover `MockService` e providers associados após a migração total.
 - ⏳ Adicionar testes de regressão e monitorar `flutter analyze`/`flutter test` no CI.
-- ⏳ Evoluir player de vídeo e consolidar ações (compartilhar, toggle de arenas) com backend real.
+- ⏳ Evoluir player de vídeo e consolidar ações com backend real.
 
 ## 📚 Histórico de Alterações Principais
 - Criação do `pubspec.yaml` com dependências solicitadas + `google_fonts`.

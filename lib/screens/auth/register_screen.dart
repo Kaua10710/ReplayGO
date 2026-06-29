@@ -26,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   bool _isLoading = false;
   String? _error;
@@ -127,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-
+                'Ao criar sua conta você concorda com os termos de uso e receber comunicações importantes.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.secondary,
                 ),

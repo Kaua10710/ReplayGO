@@ -12,7 +12,9 @@ import '../../utils/supabase_replay_mapper.dart';
 import '../../widgets/replay_card.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/live_badge.dart';
+import '../../widgets/replay_share_sheet.dart';
 import '../home/home_screen.dart';
+import '../player/replay_player_screen.dart';
 import '../profile/profile_screen.dart';
 
 class ArenaPublicArguments {
@@ -49,9 +51,7 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
         : null;
 
     final arenaId = args?.arenaId;
-    if (_initialCourtId == null) {
-      _initialCourtId = args?.initialCourt;
-    }
+    _initialCourtId ??= args?.initialCourt;
 
     if (_arenaFuture == null || _currentArenaId != arenaId) {
       _arenaFuture = _loadArenaData(arenaId);
@@ -103,14 +103,13 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
               )
             ''',
           )
-          .eq('status', 'active')
-          .order('created_at', ascending: false);
+          .eq('status', 'active');
 
       if (arenaId != null && arenaId.isNotEmpty) {
         query = query.eq('id', arenaId);
       }
 
-      final response = await query.limit(1);
+      final response = await query.order('created_at', ascending: false).limit(1);
       final list = response as List<dynamic>;
       if (list.isEmpty) {
         throw Exception('Arena não encontrada.');
@@ -164,6 +163,13 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
         setState(() => _savingReplayIds.remove(replay.id));
       }
     }
+  }
+
+  Future<void> _handleShareReplay(ReplayModel replay) async {
+    if (!mounted) return;
+    final message = await showReplayShareSheet(context, replay);
+    if (!mounted || message == null) return;
+    _showSnack(message);
   }
 
   void _showSnack(String message, {bool isError = false}) {
@@ -410,9 +416,9 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
           ),
         ),
         if (filteredReplays.isEmpty)
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: _ArenaMessageCard(
                 icon: Icons.play_disabled_outlined,
                 title: 'Nenhum replay para esta quadra',
@@ -439,6 +445,7 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
                     child: ReplayCard(
                       replay: replay,
                       onSave: isSaving ? null : () => _handleSaveReplay(replay),
+                      onShare: () => _handleShareReplay(replay),
                     ),
                   );
                 },

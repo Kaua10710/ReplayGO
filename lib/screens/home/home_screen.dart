@@ -519,7 +519,7 @@ class _FeaturedArenaCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.videocam_outlined, color: AppColors.primary),
+                const Icon(Icons.videocam_outlined, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Text(
                   '${arena.replayCount} replays disponíveis',

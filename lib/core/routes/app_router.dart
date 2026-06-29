@@ -10,7 +10,6 @@ import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../screens/player/replay_player_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash/splash_screen.dart';
-import '../../widgets/bottom_nav_bar.dart';
 
 class AppRouter {
   AppRouter()
