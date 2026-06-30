@@ -6,8 +6,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/responsive.dart';
 import '../../models/arena_model.dart';
+import '../../models/city_model.dart';
 import '../../models/replay_model.dart';
 import '../../providers/user_provider.dart';
+import '../../utils/city_grouping.dart';
 import '../../widgets/arena_carousel_card.dart';
 import '../../widgets/arena_list_tile.dart';
 import '../../widgets/bottom_nav_bar.dart';
@@ -51,18 +53,6 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-class _CityGroup {
-  const _CityGroup({
-    required this.city,
-    required this.uf,
-    required this.arenas,
-  });
-
-  final String city;
-  final String uf;
-  final List<ArenaModel> arenas;
-}
-
 Future<List<ArenaModel>> _fetchArenas() async {
   final client = Supabase.instance.client;
 
@@ -99,6 +89,37 @@ Future<List<ArenaModel>> _fetchArenas() async {
   } on PostgrestException catch (error) {
     throw Exception(error.message);
   }
+}
+
+/// Busca as cidades cadastradas pelo admin. Retorna lista vazia em caso de erro
+/// (ex.: tabela `cities` ainda não migrada) para não quebrar a home — nesse
+/// caso o agrupamento cai no fallback derivado das arenas.
+Future<List<CityModel>> _fetchCities() async {
+  final client = Supabase.instance.client;
+  try {
+    final response = await client.from('cities').select('id, name, uf').order('name');
+    final data = response as List<dynamic>;
+    return data
+        .map((item) => CityModel.fromJson(Map<String, dynamic>.from(item as Map<String, dynamic>)))
+        .toList();
+  } catch (_) {
+    return const <CityModel>[];
+  }
+}
+
+class _HomeData {
+  const _HomeData({required this.arenas, required this.cities});
+
+  final List<ArenaModel> arenas;
+  final List<CityModel> cities;
+}
+
+Future<_HomeData> _fetchHomeData() async {
+  final results = await Future.wait([_fetchArenas(), _fetchCities()]);
+  return _HomeData(
+    arenas: results[0] as List<ArenaModel>,
+    cities: results[1] as List<CityModel>,
+  );
 }
 
 Future<List<ReplayModel>> _fetchRecentReplays() async {
@@ -152,38 +173,6 @@ Future<List<ReplayModel>> _fetchRecentReplays() async {
   } on PostgrestException catch (error) {
     throw Exception(error.message);
   }
-}
-
-List<_CityGroup> _groupArenasByCity(List<ArenaModel> arenas) {
-  if (arenas.isEmpty) {
-    return [];
-  }
-
-  final Map<String, List<ArenaModel>> groups = {};
-  for (final arena in arenas) {
-    final cityKey = arena.city.trim().toLowerCase();
-    final ufKey = arena.uf.trim().toLowerCase();
-    final key = '$cityKey|$ufKey';
-    groups.putIfAbsent(key, () => <ArenaModel>[]).add(arena);
-  }
-
-  final result = groups.entries.map((entry) {
-    final grouped = entry.value.toList()
-      ..sort((a, b) {
-        if (a.isLive != b.isLive) {
-          return a.isLive ? -1 : 1;
-        }
-        if (a.replayCount != b.replayCount) {
-          return b.replayCount.compareTo(a.replayCount);
-        }
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
-    final representative = grouped.first;
-    return _CityGroup(city: representative.city, uf: representative.uf, arenas: grouped);
-  }).toList()
-    ..sort((a, b) => a.city.toLowerCase().compareTo(b.city.toLowerCase()));
-
-  return result;
 }
 
 class _HomeLoadingView extends StatelessWidget {
@@ -314,18 +303,18 @@ class _HomeDashboard extends StatefulWidget {
 }
 
 class _HomeDashboardState extends State<_HomeDashboard> {
-  late Future<List<ArenaModel>> _arenasFuture;
+  late Future<_HomeData> _dataFuture;
 
   @override
   void initState() {
     super.initState();
-    _arenasFuture = _fetchArenas();
+    _dataFuture = _fetchHomeData();
   }
 
   Future<void> _refresh() async {
-    final arenas = await _fetchArenas();
+    final data = await _fetchHomeData();
     if (!mounted) return;
-    setState(() => _arenasFuture = Future.value(arenas));
+    setState(() => _dataFuture = Future.value(data));
   }
 
   @override
@@ -338,8 +327,8 @@ class _HomeDashboardState extends State<_HomeDashboard> {
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _refresh,
-        child: FutureBuilder<List<ArenaModel>>(
-          future: _arenasFuture,
+        child: FutureBuilder<_HomeData>(
+          future: _dataFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const _HomeLoadingView();
@@ -352,7 +341,8 @@ class _HomeDashboardState extends State<_HomeDashboard> {
               );
             }
 
-            final arenas = snapshot.data ?? const <ArenaModel>[];
+            final arenas = snapshot.data?.arenas ?? const <ArenaModel>[];
+            final cities = snapshot.data?.cities ?? const <CityModel>[];
             ArenaModel? featured;
             if (arenas.isNotEmpty) {
               featured = arenas.firstWhere(
@@ -361,7 +351,7 @@ class _HomeDashboardState extends State<_HomeDashboard> {
               );
             }
 
-            final groups = _groupArenasByCity(arenas);
+            final groups = buildCityGroups(cities, arenas);
 
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),

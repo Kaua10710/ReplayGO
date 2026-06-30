@@ -41,6 +41,7 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
   String? _currentArenaId;
   String? _selectedCourtId;
   String? _initialCourtId;
+  bool _showAllReplays = false;
   final Set<String> _savingReplayIds = {};
 
   @override
@@ -301,7 +302,7 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
     }
 
     final filteredReplays = data.replays.where((replay) {
-      if (desiredCourtId == null) {
+      if (_showAllReplays || desiredCourtId == null) {
         return true;
       }
       return replay.courtId == null || replay.courtId == desiredCourtId;
@@ -405,8 +406,8 @@ class _ArenaPublicScreenState extends State<ArenaPublicScreen> {
                           ),
                     ),
                     TextButton(
-                      onPressed: () {},
-                      child: const Text('Ver tudo'),
+                      onPressed: () => setState(() => _showAllReplays = !_showAllReplays),
+                      child: Text(_showAllReplays ? 'Filtrar por quadra' : 'Ver tudo'),
                     ),
                   ],
                 ),

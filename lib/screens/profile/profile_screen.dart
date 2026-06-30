@@ -66,6 +66,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await future;
   }
 
+  Future<void> _openSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.logout, color: AppColors.secondary),
+                title: const Text('Sair da conta'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await Supabase.instance.client.auth.signOut();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text('Cancelar'),
+                onTap: () => Navigator.of(sheetContext).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAllSaved(List<_SavedReplayItem> items) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return ListView.separated(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24),
+              itemCount: items.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(height: 4),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Replays salvos (${items.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  );
+                }
+                final item = items[index - 1];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.play_circle_outline, color: AppColors.primary),
+                  title: Text(item.replay.title),
+                  subtitle: Text(item.replay.arenaName ?? 'Arena'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push(
+                      ReplayPlayerScreen.routePath,
+                      extra: ReplayPlayerArguments(
+                        arenaName: item.replay.arenaName ?? 'Arena',
+                        replay: item.replay,
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _removeSavedReplay(String savedReplayId) async {
     if (_deletingReplayId != null) {
       return;
@@ -232,7 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: _openSettings,
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
@@ -323,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           TextButton(
-            onPressed: savedReplays.isEmpty ? null : () {},
+            onPressed: savedReplays.isEmpty ? null : () => _showAllSaved(savedReplays),
             child: const Text('Ver todos'),
           ),
         ],

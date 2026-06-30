@@ -9,10 +9,10 @@ import 'screens/admin/admin_panel_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/owner/owner_dashboard_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'providers/admin_controller.dart';
 import 'providers/user_provider.dart';
 import 'services/admin_service.dart';
 import 'services/auth_service.dart';
-import 'services/mock_service.dart';
 
 class ReplayGoApp extends StatefulWidget {
   const ReplayGoApp({super.key});
@@ -24,9 +24,9 @@ class ReplayGoApp extends StatefulWidget {
 class _ReplayGoAppState extends State<ReplayGoApp> {
   late final AppRouter _appRouter;
   final AuthService _authService = AuthService();
-  final MockService _mockService = MockService();
   final UserProvider _userProvider = UserProvider();
   final AdminService _adminService = AdminService();
+  late final AdminController _adminController = AdminController(_adminService);
 
   @override
   void initState() {
@@ -84,7 +84,7 @@ class _ReplayGoAppState extends State<ReplayGoApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<MockService>.value(value: _mockService),
+        ChangeNotifierProvider<AdminController>.value(value: _adminController),
         ChangeNotifierProvider<UserProvider>.value(value: _userProvider),
         Provider<AuthService>.value(value: _authService),
         Provider<AdminService>.value(value: _adminService),
