@@ -4,11 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../models/profile_model.dart';
 import '../../providers/user_provider.dart';
-import '../../screens/admin/admin_panel_screen.dart';
 import '../../screens/home/home_screen.dart';
-import '../../screens/owner/owner_dashboard_screen.dart';
 import '../../services/auth_service.dart';
 
 
@@ -65,31 +62,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      final role = await authService.signIn(email: email, password: password);
+      // Quando a confirmação de e-mail está ligada, o signUp NÃO retorna sessão.
+      // Nesse caso não chamamos signIn (falharia) nem navegamos.
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) {
+        setState(() {
+          _error = 'Conta criada! Confirme seu e-mail para poder entrar.';
+        });
+        return;
+      }
 
-      if (!mounted) return;
-
+      // Sessão ativa (confirmação de e-mail desligada): segue para a home.
       await context.read<UserProvider>().loadProfile();
-
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Conta criada com sucesso!')),
       );
-      switch (role) {
-        case UserRole.owner:
-          context.go(OwnerDashboardScreen.routePath);
-          break;
-        case UserRole.admin:
-          context.go(AdminPanelScreen.routePath);
-          break;
-        case UserRole.user:
-          context.go(HomeShell.routePath);
-          break;
-      }
+      context.go(HomeShell.routePath);
     } on AuthException catch (error) {
-      setState(() => _error = error.message);
+      setState(() => _error = authErrorMessagePt(error));
     } catch (error) {
-      setState(() => _error = 'Não foi possível criar a conta. Tente novamente.');
+      setState(() => _error = authErrorMessagePt(error));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

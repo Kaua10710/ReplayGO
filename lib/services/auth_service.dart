@@ -14,8 +14,12 @@ class AuthService {
     required String password,
     required String name,
     required UserRole role,
-  }) async {
-    final response = await _client.auth.signUp(
+  }) {
+    // O perfil é criado pelo trigger `handle_new_user` no banco a partir dos
+    // metadados (name/role). Não fazemos upsert em `profiles` aqui: além de
+    // redundante, falharia sob RLS (não há policy de INSERT para o próprio
+    // usuário).
+    return _client.auth.signUp(
       email: email,
       password: password,
       data: {
@@ -23,19 +27,6 @@ class AuthService {
         'role': role.name,
       },
     );
-
-    final user = response.user;
-    if (user != null) {
-      await _client.from('profiles').upsert({
-        'id': user.id,
-        'email': email,
-        'name': name,
-        'role': role.name,
-        'notifications': 0,
-      });
-    }
-
-    return response;
   }
 
   Future<AuthResponse> signUpClient({
@@ -150,4 +141,29 @@ class AuthService {
         .map(ProfileModel.fromJson)
         .toList();
   }
+}
+
+/// Converte erros de autenticação do Supabase em mensagens claras em PT-BR.
+String authErrorMessagePt(Object error) {
+  if (error is AuthException) {
+    final message = error.message.toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return 'E-mail ou senha incorretos.';
+    }
+    if (message.contains('email not confirmed')) {
+      return 'Confirme seu e-mail antes de entrar.';
+    }
+    if (message.contains('already registered') || message.contains('already exists')) {
+      return 'Este e-mail já está cadastrado.';
+    }
+    if (message.contains('password should be at least')) {
+      return 'A senha é muito curta.';
+    }
+    if (message.contains('rate limit') || message.contains('too many')) {
+      return 'Muitas tentativas. Aguarde um instante e tente de novo.';
+    }
+    // Fallback: usa a mensagem original quando não há tradução conhecida.
+    return error.message;
+  }
+  return 'Algo deu errado. Tente novamente.';
 }

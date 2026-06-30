@@ -69,17 +69,19 @@ class _LoginScreenState extends State<LoginScreen> {
       };
 
   void _applyMockCredentials(UserRole role) {
-    if (!_useMockCredentials) {
-      return;
-    }
-
     final credential = _mockProfiles[role];
     if (credential == null) {
       return;
     }
 
-    _emailController.text = credential.email;
-    _passwordController.text = credential.password;
+    _emailController.value = TextEditingValue(
+      text: credential.email,
+      selection: TextSelection.collapsed(offset: credential.email.length),
+    );
+    _passwordController.value = TextEditingValue(
+      text: credential.password,
+      selection: TextSelection.collapsed(offset: credential.password.length),
+    );
   }
 
   Future<void> _handleForgotPassword() async {
@@ -138,9 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
       }
     } on AuthException catch (error) {
-      setState(() => _error = error.message);
+      setState(() => _error = authErrorMessagePt(error));
     } catch (error) {
-      setState(() => _error = 'Não foi possível entrar. Tente novamente.');
+      setState(() => _error = authErrorMessagePt(error));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -255,9 +257,13 @@ class _LoginScreenState extends State<LoginScreen> {
               CheckboxListTile(
                 value: _useMockCredentials,
                 onChanged: (value) {
-                  setState(() => _useMockCredentials = value ?? false);
-                  if (value ?? false) {
+                  final enabled = value ?? false;
+                  setState(() => _useMockCredentials = enabled);
+                  if (enabled) {
                     _applyMockCredentials(_selectedRole);
+                  } else {
+                    _emailController.clear();
+                    _passwordController.clear();
                   }
                 },
                 contentPadding: EdgeInsets.zero,
