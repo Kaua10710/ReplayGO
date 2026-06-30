@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../auth/login_screen.dart';
+import '../auth/register_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,6 +35,12 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateNext() {
     if (!mounted) return;
     context.go(LoginScreen.routePath);
+  }
+
+  void _goTo(String path) {
+    _timer?.cancel();
+    if (!mounted) return;
+    context.go(path);
   }
 
   @override
@@ -142,7 +149,7 @@ class _SplashScreenState extends State<SplashScreen> {
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton(
-                            onPressed: () {},
+                            onPressed: () => _goTo(RegisterScreen.routePath),
                             style: OutlinedButton.styleFrom(
                               backgroundColor: Colors.black.withValues(alpha: 0.3),
                               foregroundColor: Colors.white,
@@ -156,7 +163,7 @@ class _SplashScreenState extends State<SplashScreen> {
                           ),
                           const SizedBox(height: 16),
                           GestureDetector(
-                            onTap: () {},
+                            onTap: () => _goTo(LoginScreen.routePath),
                             child: Text(
                               'Explorar como visitante →',
                               style: theme.textTheme.bodyMedium?.copyWith(

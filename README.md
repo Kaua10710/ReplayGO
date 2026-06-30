@@ -9,8 +9,7 @@ ReplayGO é um aplicativo mobile voltado para replays instantâneos em quadras d
 - **Reprodutor de vídeo (placeholder):** better_player + video_player (apenas dependências)
 - **Armazenamento local (futuro):** shared_preferences (já configurado no pubspec)
 - **Cliente HTTP (futuro):** Dio
-- **Supabase:** Autenticação, perfis, arenas, replays e favoritos
-- **Mock service:** Mantido apenas como fallback enquanto o painel admin é migrado
+- **Supabase:** Autenticação, perfis, cidades, arenas, replays e favoritos (única fonte de dados)
 
 ## 🎨 Design Tokens
 - **Primária:** `#FF6B00`
@@ -64,13 +63,13 @@ Todas usam conteúdo mockado e placeholders para vídeos.
 - `RoleSelector`
 
 ## 🗃️ Fontes de Dados
-- **Supabase (principal)**
+- **Supabase (única fonte)**
   - Perfis de usuários carregados via `UserProvider`
-  - Arenas, quadras e replays consumidos diretamente das tabelas
+  - Cidades, arenas, quadras e replays consumidos diretamente das tabelas
   - Replays salvos gravados em `saved_replays`
-- **MockService (temporário)**
-  - Mantido apenas para rotinas ainda não migradas no painel admin
-  - Será removido quando toda a interface administrativa usar o `AdminService`
+  - Painel admin opera 100% via `AdminService`, orquestrado pelo `AdminController`
+    (`ChangeNotifier` com cache + CRUD assíncrono e auto-refresh). O `MockService`
+    foi removido.
 
 ## 🔐 Autenticação & Perfis (Supabase)
 - Implementado com `supabase_flutter` e monitorado em `app.dart` para carregar o perfil autenticado.
@@ -80,17 +79,29 @@ Todas usam conteúdo mockado e placeholders para vídeos.
 - Proprietários e admins seguem cadastrados via painel admin (em migração para Supabase).
 
 ### 🔧 Configuração rápida do Supabase
-1. Defina `url` e `anonKey` em `lib/main.dart` com os valores do seu projeto.
-2. Execute `flutter pub get`.
-3. Rode o app (`flutter run`) e valide o fluxo de registro/login.
+1. **Aplique o schema:** rode `supabase/schema.sql` no SQL Editor do seu projeto.
+   Ele é idempotente e já inclui a coluna `uf` em `arenas` e a tabela `cities`
+   (com RLS e seed), necessárias para o painel admin automatizado.
+2. **Credenciais:** use os valores padrão em `lib/main.dart` ou externalize via
+   `--dart-define`:
+   ```bash
+   flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
+   ```
+3. Execute `flutter pub get`.
+4. Rode o app (`flutter run`) e valide o fluxo de registro/login.
+
+### 🤖 Integração Contínua
+- Workflow `.github/workflows/flutter.yml` roda `flutter analyze` e `flutter test`
+  em cada push/PR (branches `main` e `Japones`).
 
 ## 🚧 Andamento do MVP
 - ✅ Navegação GoRouter configurada com 8 telas interligadas.
 - ✅ Tema, tipografia, cores e componentes compartilhados padronizados.
 - ✅ Autenticação e carregamento de perfil integrados ao Supabase.
 - ✅ Telas de Perfil, Home, Owner Dashboard e Arena Pública consumindo dados reais.
+- ✅ Painel admin 100% no Supabase (dashboard com métricas reais + CRUD de cidades/arenas via `AdminController`).
+- ✅ Home consome cidades e arenas do Supabase (carrosséis por cidade, incluindo cidades sem arenas).
 - ⚠️ Players de vídeo ainda são placeholders (dependências já no `pubspec`).
-- ⚠️ Painel admin em migração para Supabase (usa `AdminService`, porém UI ainda conecta `MockService`).
 - ⚠️ Integrações externas adicionais (Dio/shared_preferences) aguardando backend.
 - ✅ Botões avançados (compartilhar, controle fino de arenas) liberados nas telas de replays e painel do proprietário.
 
@@ -159,13 +170,25 @@ Home Shell → Arena Pública → Replay Player → Perfil
 - Criação do `AdminService` para centralizar operações do painel administrativo usando Supabase.
 - Novo utilitário `normalizeReplayRow` para padronizar joins de arenas/quadras/replays.
 
-## ✅ Estado Atual & Próximos Passos
-- ✅ Base do app, UI/UX, rotas e integração Supabase para usuário/owner em produção.
+## ✅ Estado Atual
+- ✅ Base do app, UI/UX, rotas e integração Supabase (usuário/owner) em produção.
 - ✅ Fluxo de salvar replays direcionado à tabela `saved_replays`.
-- ⏳ Migrar o painel admin para consumir `AdminService` em vez de `MockService`.
-- ⏳ Remover `MockService` e providers associados após a migração total.
-- ⏳ Adicionar testes de regressão e monitorar `flutter analyze`/`flutter test` no CI.
-- ⏳ Evoluir player de vídeo e consolidar ações com backend real.
+- ✅ Painel admin 100% no Supabase via `AdminService`/`AdminController`; `MockService` removido.
+- ✅ Home consome cidades + arenas do Supabase (carrosséis por cidade, inclusive sem arenas).
+- ✅ Tabela `cities` + coluna `uf` em `arenas` no schema; credenciais via `--dart-define`.
+- ✅ CI (`flutter analyze` + `flutter test`) no GitHub Actions.
+- ✅ Testes: `AdminController` (CRUD/loading/erro), agrupamento por cidade (`utils/city_grouping`) e fluxo de boot (`app_flow_test`).
+- ✅ Ações do Painel Geral do admin: **Suspender/Reativar** (status via `AdminController`), **Ver replays** (abre a arena) e **Detalhes** (diálogo).
+- ✅ Botões antes sem ação implementados: Replay Player (compartilhar + salvar no perfil), Splash (Criar conta / Visitante), Login (Esqueci minha senha via `AuthService.resetPassword`), Profile (Sair / Ver todos), Arena ("Ver tudo" alterna o filtro de quadra).
+- ✅ Owner Dashboard com persistência real (status da arena, visibilidade de quadras, copiar link, compartilhar) — confirmado.
+- ✅ Scaffold de `integration_test/` para E2E (boot→login executável; fluxo autenticado documentado/`skip`).
+
+## 🗺️ Próximos Passos
+1. **Deploy do schema (ops):** aplicar `supabase/schema.sql` no projeto Supabase (cria `cities` + coluna `uf`) e validar o **Checklist de Validação Manual** acima.
+2. **Player de vídeo real:** substituir `_VideoPlayerPlaceholder` (arena pública) e o player do Replay Player por `better_player`/`video_player`; isso também habilita o "Salvar na galeria".
+3. **E2E autenticado:** habilitar o caso `skip` em `integration_test/app_test.dart` (login → CRUD admin → home) contra um Supabase de teste com o schema aplicado.
+
+> 📓 O passo a passo de cada iteração fica documentado em [`docs/DEV_LOG.md`](docs/DEV_LOG.md).
 
 ## 📚 Histórico de Alterações Principais
 - Criação do `pubspec.yaml` com dependências solicitadas + `google_fonts`.

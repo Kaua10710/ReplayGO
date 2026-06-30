@@ -237,6 +237,70 @@ create or replace trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
 
+-- =============================================================================
+-- MIGRAÇÃO: automatização do painel admin (coluna uf + tabela cities)
+-- Idempotente — seguro reexecutar.
+-- =============================================================================
+
+-- 1) Arenas ganham UF (usada nos carrosséis por cidade) ----------------------
+alter table public.arenas
+  add column if not exists uf text not null default '';
+
+-- 2) Tabela de cidades --------------------------------------------------------
+create table if not exists public.cities (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  uf text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Evita cidades duplicadas (mesmo nome+UF, ignorando caixa).
+create unique index if not exists cities_name_uf_unique
+  on public.cities (lower(name), lower(uf));
+
+drop trigger if exists set_timestamp_cities on public.cities;
+create trigger set_timestamp_cities
+before update on public.cities
+for each row execute function public.set_current_timestamp_updated_at();
+
+-- 3) RLS de cidades: leitura autenticada, escrita só para admin --------------
+alter table public.cities enable row level security;
+
+drop policy if exists "Authenticated read cities" on public.cities;
+create policy "Authenticated read cities"
+on public.cities for select
+using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins manage cities" on public.cities;
+create policy "Admins manage cities"
+on public.cities for all
+using (
+  exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role = 'admin'
+  )
+)
+with check (
+  exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role = 'admin'
+  )
+);
+
+-- 4) Seed inicial de cidades (apenas se a tabela estiver vazia) ---------------
+insert into public.cities (name, uf)
+select v.name, v.uf
+from (values
+  ('Fortaleza', 'CE'),
+  ('Recife', 'PE'),
+  ('Florianópolis', 'SC'),
+  ('Salvador', 'BA'),
+  ('Rio de Janeiro', 'RJ'),
+  ('Porto Alegre', 'RS')
+) as v(name, uf)
+where not exists (select 1 from public.cities);
+
 -- Seeds opcionais -------------------------------------------------------------
 -- Exemplos: inserir arenas iniciais, quadras e replays mockados se necessário.
 -- Utilize os IDs gerados pelo app ou deixe para criar via scripts dedicados.

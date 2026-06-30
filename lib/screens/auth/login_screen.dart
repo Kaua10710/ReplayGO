@@ -82,6 +82,29 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.text = credential.password;
   }
 
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = 'Informe seu email no campo acima para redefinir a senha.');
+      return;
+    }
+
+    final authService = context.read<AuthService>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await authService.resetPassword(email);
+      if (!mounted) return;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Enviamos um link de redefinição para $email.')),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Não foi possível enviar o email de redefinição.');
+    }
+  }
+
   Future<void> _handleLogin() async {
     final authService = context.read<AuthService>();
     final userProvider = context.read<UserProvider>();
@@ -248,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _handleForgotPassword,
                   child: Text(
                     'Esqueci minha senha',
                     style: theme.textTheme.bodyMedium?.copyWith(

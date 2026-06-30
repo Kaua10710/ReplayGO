@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,9 +9,10 @@ import '../../core/responsive.dart';
 import '../../models/arena_model.dart';
 import '../../models/city_model.dart';
 import '../../models/profile_model.dart';
+import '../../providers/admin_controller.dart';
 import '../../services/auth_service.dart';
-import '../../services/mock_service.dart';
 import '../../widgets/arena_list_tile.dart';
+import '../arena/arena_public_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -309,6 +311,16 @@ class _AdminSection {
 class _AdminPanelScreenState extends State<AdminPanelScreen> {
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AdminController>().load();
+      }
+    });
+  }
+
   static const _sections = <_AdminSection>[
     _AdminSection('Painel Geral', Icons.dashboard_outlined, _GeneralPanelView()),
     _AdminSection('Contas', Icons.person_add_alt_1_outlined, _ManageAccountsView()),
@@ -516,13 +528,16 @@ class _NavItem extends StatelessWidget {
 class _GeneralPanelView extends StatelessWidget {
   const _GeneralPanelView();
 
-  void _showActions(BuildContext context, ArenaModel arena) {
-    showModalBottomSheet<void>(
+  Future<void> _showActions(BuildContext context, ArenaModel arena) async {
+    final controller = context.read<AdminController>();
+    final isActive = arena.status == ArenaStatus.active;
+
+    await showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -531,28 +546,40 @@ class _GeneralPanelView extends StatelessWidget {
             children: [
               Text(
                 arena.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.pause_circle_outline),
-                label: const Text('Suspender'),
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  _toggleSuspend(context, controller, arena);
+                },
+                icon: Icon(isActive ? Icons.pause_circle_outline : Icons.play_circle_outline),
+                label: Text(isActive ? 'Suspender' : 'Reativar'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
+                  backgroundColor: isActive ? AppColors.secondary : AppColors.primary,
                 ),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push(
+                    ArenaPublicScreen.routePath,
+                    extra: ArenaPublicArguments(arenaId: arena.id),
+                  );
+                },
                 icon: const Icon(Icons.play_circle_outline),
                 label: const Text('Ver replays'),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  _showDetails(context, arena);
+                },
                 icon: const Icon(Icons.info_outline),
                 label: const Text('Detalhes'),
                 style: OutlinedButton.styleFrom(
@@ -566,38 +593,117 @@ class _GeneralPanelView extends StatelessWidget {
     );
   }
 
+  Future<void> _toggleSuspend(
+    BuildContext context,
+    AdminController controller,
+    ArenaModel arena,
+  ) async {
+    final newStatus =
+        arena.status == ArenaStatus.active ? ArenaStatus.inactive : ArenaStatus.active;
+    try {
+      await controller.updateArena(arena.id, status: newStatus);
+      if (context.mounted) {
+        showAdminSnack(
+          context,
+          newStatus == ArenaStatus.inactive
+              ? '${arena.name} suspensa — fica oculta para clientes.'
+              : '${arena.name} reativada.',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showAdminSnack(context, 'Não foi possível alterar o status.', isError: true);
+      }
+    }
+  }
+
+  void _showDetails(BuildContext context, ArenaModel arena) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(arena.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _detailRow('Cidade', arena.uf.isNotEmpty ? '${arena.city} - ${arena.uf}' : arena.city),
+            _detailRow('Status', arena.status == ArenaStatus.active ? 'Ativa' : 'Inativa'),
+            _detailRow('Ao vivo', arena.isLive ? 'Sim' : 'Não'),
+            _detailRow('Replays', '${arena.replayCount}'),
+            _detailRow('Quadras', '${arena.courts.length}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(label, style: const TextStyle(color: AppColors.mutedGray)),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final service = context.watch<MockService>();
-    final arenas = service.arenas;
+    final controller = context.watch<AdminController>();
+    final arenas = controller.arenas;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    if (controller.isLoading && !controller.hasLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (controller.error != null && !controller.hasLoaded) {
+      return _AdminErrorView(onRetry: () => controller.refresh());
+    }
+
+    return RefreshIndicator(
+      onRefresh: controller.refresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           LayoutBuilder(
             builder: (context, constraints) {
               final cards = [
-                const _AdminStatCard(
+                _AdminStatCard(
                   icon: Icons.group_outlined,
-                  value: '2.847',
+                  value: '${controller.totalUsers}',
                   label: 'Usuários',
                 ),
-                const _AdminStatCard(
+                _AdminStatCard(
                   icon: Icons.play_circle_outline,
-                  value: '18.2k',
+                  value: '${controller.totalReplays}',
                   label: 'Replays',
                 ),
                 _AdminStatCard(
                   icon: Icons.location_city_outlined,
-                  value: '${service.cities.length}',
+                  value: '${controller.totalCities}',
                   label: 'Cidades',
                 ),
                 _AdminStatCard(
                   icon: Icons.sports_volleyball_outlined,
-                  value: '${arenas.length}',
+                  value: '${controller.totalArenas}',
                   label: 'Arenas',
                 ),
               ];
@@ -654,7 +760,8 @@ class _GeneralPanelView extends StatelessWidget {
               );
             }).toList(),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -674,6 +781,7 @@ class _RegisterCityViewState extends State<_RegisterCityView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _ufController = TextEditingController();
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -682,27 +790,39 @@ class _RegisterCityViewState extends State<_RegisterCityView> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final service = context.read<MockService>();
+    final controller = context.read<AdminController>();
     final name = _nameController.text.trim();
     final uf = _ufController.text.trim();
 
-    if (service.cityExists(name, uf)) {
-      showAdminSnack(context, 'Essa cidade já está cadastrada.', isError: true);
-      return;
+    setState(() => _submitting = true);
+    try {
+      if (await controller.cityExists(name, uf)) {
+        if (mounted) {
+          showAdminSnack(context, 'Essa cidade já está cadastrada.', isError: true);
+        }
+        return;
+      }
+      await controller.addCity(name, uf);
+      if (!mounted) return;
+      _nameController.clear();
+      _ufController.clear();
+      FocusScope.of(context).unfocus();
+      showAdminSnack(context, '$name - ${uf.toUpperCase()} cadastrada com sucesso!');
+    } catch (error) {
+      if (mounted) {
+        showAdminSnack(context, 'Não foi possível cadastrar a cidade.', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
-    final city = service.addCity(name, uf);
-    _nameController.clear();
-    _ufController.clear();
-    FocusScope.of(context).unfocus();
-    showAdminSnack(context, '${city.name} - ${city.uf} cadastrada com sucesso!');
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cities = context.watch<MockService>().cities;
+    final cities = context.watch<AdminController>().cities;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -744,9 +864,15 @@ class _RegisterCityViewState extends State<_RegisterCityView> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _submit,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Cadastrar cidade'),
+                    onPressed: _submitting ? null : _submit,
+                    icon: _submitting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add),
+                    label: Text(_submitting ? 'Cadastrando...' : 'Cadastrar cidade'),
                   ),
                 ),
               ],
@@ -787,8 +913,8 @@ class _RegisterArenaView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final service = context.watch<MockService>();
-    final cities = service.cities;
+    final controller = context.watch<AdminController>();
+    final cities = controller.cities;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -814,8 +940,8 @@ class _RegisterArenaView extends StatelessWidget {
             ArenaForm(
               cities: cities,
               submitLabel: 'Cadastrar arena',
-              onSubmit: (data) {
-                service.addArena(
+              onSubmit: (data) async {
+                await controller.addArena(
                   name: data.name,
                   city: data.city,
                   uf: data.uf,
@@ -823,7 +949,9 @@ class _RegisterArenaView extends StatelessWidget {
                   replayCount: data.replayCount,
                   status: data.status,
                 );
-                showAdminSnack(context, '${data.name} cadastrada com sucesso!');
+                if (context.mounted) {
+                  showAdminSnack(context, '${data.name} cadastrada com sucesso!');
+                }
               },
               resetAfterSubmit: true,
             ),
@@ -887,24 +1015,33 @@ class _ArenasCrudTab extends StatelessWidget {
   const _ArenasCrudTab();
 
   Future<void> _edit(BuildContext context, ArenaModel arena) async {
-    final service = context.read<MockService>();
+    final controller = context.read<AdminController>();
     await showDialog<void>(
       context: context,
-      builder: (_) => _ArenaEditDialog(arena: arena, cities: service.cities),
+      builder: (_) => _ArenaEditDialog(arena: arena, cities: controller.cities),
     );
   }
 
   Future<void> _delete(BuildContext context, ArenaModel arena) async {
     final ok = await confirmDelete(context, 'Excluir a arena "${arena.name}"?');
-    if (ok && context.mounted) {
-      context.read<MockService>().removeArena(arena.id);
-      showAdminSnack(context, 'Arena removida.');
+    if (!ok || !context.mounted) return;
+    try {
+      await context.read<AdminController>().removeArena(arena.id);
+      if (context.mounted) showAdminSnack(context, 'Arena removida.');
+    } catch (_) {
+      if (context.mounted) {
+        showAdminSnack(context, 'Não foi possível remover a arena.', isError: true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final arenas = context.watch<MockService>().arenas;
+    final controller = context.watch<AdminController>();
+    final arenas = controller.arenas;
+    if (controller.isLoading && !controller.hasLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (arenas.isEmpty) {
       return const _EmptyHint(icon: Icons.inbox_outlined, text: 'Nenhuma arena cadastrada.');
     }
@@ -958,15 +1095,24 @@ class _CitiesCrudTab extends StatelessWidget {
       context,
       'Excluir "${city.label}"? As arenas dessa cidade deixam de aparecer no carrossel.',
     );
-    if (ok && context.mounted) {
-      context.read<MockService>().removeCity(city.id);
-      showAdminSnack(context, 'Cidade removida.');
+    if (!ok || !context.mounted) return;
+    try {
+      await context.read<AdminController>().removeCity(city.id);
+      if (context.mounted) showAdminSnack(context, 'Cidade removida.');
+    } catch (_) {
+      if (context.mounted) {
+        showAdminSnack(context, 'Não foi possível remover a cidade.', isError: true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cities = context.watch<MockService>().cities;
+    final controller = context.watch<AdminController>();
+    final cities = controller.cities;
+    if (controller.isLoading && !controller.hasLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (cities.isEmpty) {
       return const _EmptyHint(icon: Icons.inbox_outlined, text: 'Nenhuma cidade cadastrada.');
     }
@@ -1033,8 +1179,8 @@ class _ArenaEditDialog extends StatelessWidget {
                 cities: cities,
                 initial: arena,
                 submitLabel: 'Salvar alterações',
-                onSubmit: (data) {
-                  context.read<MockService>().updateArena(
+                onSubmit: (data) async {
+                  await context.read<AdminController>().updateArena(
                         arena.id,
                         name: data.name,
                         city: data.city,
@@ -1043,8 +1189,10 @@ class _ArenaEditDialog extends StatelessWidget {
                         replayCount: data.replayCount,
                         status: data.status,
                       );
-                  Navigator.of(context).pop();
-                  showAdminSnack(context, 'Arena atualizada.');
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    showAdminSnack(context, 'Arena atualizada.');
+                  }
                 },
               ),
             ],
@@ -1075,15 +1223,26 @@ class _CityEditDialogState extends State<_CityEditDialog> {
     super.dispose();
   }
 
-  void _save() {
+  bool _saving = false;
+
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    context.read<MockService>().updateCity(
-          widget.city.id,
-          name: _name.text,
-          uf: _uf.text,
-        );
-    Navigator.of(context).pop();
-    showAdminSnack(context, 'Cidade atualizada.');
+    setState(() => _saving = true);
+    try {
+      await context.read<AdminController>().updateCity(
+            widget.city.id,
+            name: _name.text,
+            uf: _uf.text,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      showAdminSnack(context, 'Cidade atualizada.');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saving = false);
+        showAdminSnack(context, 'Não foi possível atualizar a cidade.', isError: true);
+      }
+    }
   }
 
   @override
@@ -1128,11 +1287,14 @@ class _CityEditDialogState extends State<_CityEditDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: _saving ? null : () => Navigator.of(context).pop(),
                       child: const Text('Cancelar'),
                     ),
                     const SizedBox(width: 8),
-                    ElevatedButton(onPressed: _save, child: const Text('Salvar')),
+                    ElevatedButton(
+                      onPressed: _saving ? null : _save,
+                      child: Text(_saving ? 'Salvando...' : 'Salvar'),
+                    ),
                   ],
                 ),
               ],
@@ -1176,7 +1338,7 @@ class ArenaForm extends StatefulWidget {
   });
 
   final List<CityModel> cities;
-  final ValueChanged<ArenaFormData> onSubmit;
+  final Future<void> Function(ArenaFormData data) onSubmit;
   final String submitLabel;
   final ArenaModel? initial;
   final bool resetAfterSubmit;
@@ -1192,6 +1354,7 @@ class _ArenaFormState extends State<ArenaForm> {
   CityModel? _city;
   late bool _isLive;
   late ArenaStatus _status;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -1201,7 +1364,7 @@ class _ArenaFormState extends State<ArenaForm> {
     _replays = TextEditingController(text: a != null ? '${a.replayCount}' : '0');
     _isLive = a?.isLive ?? false;
     _status = a?.status ?? ArenaStatus.active;
-    if (a != null) {
+    if (a != null && widget.cities.isNotEmpty) {
       _city = widget.cities.firstWhere(
         (c) => c.name.toLowerCase() == a.city.toLowerCase(),
         orElse: () => widget.cities.first,
@@ -1216,29 +1379,41 @@ class _ArenaFormState extends State<ArenaForm> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_city == null) {
       showAdminSnack(context, 'Selecione uma cidade.', isError: true);
       return;
     }
-    widget.onSubmit(ArenaFormData(
+    final data = ArenaFormData(
       name: _name.text.trim(),
       city: _city!.name,
       uf: _city!.uf,
       isLive: _isLive,
       replayCount: int.tryParse(_replays.text.trim()) ?? 0,
       status: _status,
-    ));
-    if (widget.resetAfterSubmit) {
-      _name.clear();
-      _replays.text = '0';
-      setState(() {
-        _isLive = false;
-        _status = ArenaStatus.active;
-        _city = null;
-      });
-      FocusScope.of(context).unfocus();
+    );
+
+    setState(() => _submitting = true);
+    try {
+      await widget.onSubmit(data);
+      if (!mounted) return;
+      if (widget.resetAfterSubmit) {
+        _name.clear();
+        _replays.text = '0';
+        setState(() {
+          _isLive = false;
+          _status = ArenaStatus.active;
+          _city = null;
+        });
+        FocusScope.of(context).unfocus();
+      }
+    } catch (error) {
+      if (mounted) {
+        showAdminSnack(context, 'Não foi possível salvar a arena.', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -1294,9 +1469,15 @@ class _ArenaFormState extends State<ArenaForm> {
           ),
           const SizedBox(height: 8),
           ElevatedButton.icon(
-            onPressed: _submit,
-            icon: const Icon(Icons.check),
-            label: Text(widget.submitLabel),
+            onPressed: _submitting ? null : _submit,
+            icon: _submitting
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            label: Text(_submitting ? 'Salvando...' : widget.submitLabel),
           ),
         ],
       ),
@@ -1351,6 +1532,46 @@ Future<bool> confirmDelete(BuildContext context, String message) async {
     ),
   );
   return result ?? false;
+}
+
+class _AdminErrorView extends StatelessWidget {
+  const _AdminErrorView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.mutedGray),
+            const SizedBox(height: 12),
+            Text(
+              'Não foi possível carregar os dados do painel.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Verifique a conexão com o Supabase e tente novamente.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.mutedGray),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyHint extends StatelessWidget {
